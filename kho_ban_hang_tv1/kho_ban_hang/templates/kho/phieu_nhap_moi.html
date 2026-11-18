@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Lập phiếu nhập kho{% endblock %}
+{% block content %}
+<header class="page-head"><h1>Lập phiếu nhập</h1></header>
+<p class="notice" data-error hidden role="alert"></p>
+<form data-receipt-form>
+  <section class="panel">
+    <h2>Thông tin phiếu</h2>
+    <div class="field-grid">
+      <label>Nhà cung cấp<select name="ma_ncc" required>
+        <option value="">Chọn nhà cung cấp</option>
+        {% for ncc in nha_cung_cap %}<option value="{{ ncc.ma_ncc }}">{{ ncc.ma_ncc }} · {{ ncc.ten_ncc }}</option>{% endfor %}
+      </select></label>
+      <label>Ngày nhập<input type="date" name="ngay_nhap" value="{{ ngay_hom_nay }}" max="{{ ngay_hom_nay }}" required></label>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="section-head"><h2>Dòng hàng</h2><button type="button" class="secondary" data-add-row>+ Thêm dòng</button></div>
+    <p class="muted">Thực phẩm cần ngày sản xuất và hạn sử dụng.</p>
+    <div data-rows></div>
+    <div class="actions"><button type="submit">Lưu phiếu nháp</button></div>
+  </section>
+  <template data-row-template>
+    <fieldset class="line-item">
+      <legend data-row-title>Dòng hàng</legend>
+      <div class="field-grid">
+        <label>Sản phẩm<select name="ma_sp" required>
+          <option value="">Chọn sản phẩm</option>
+          {% for sp in san_pham %}<option value="{{ sp.ma_sp }}" data-food="{{ 'yes' if sp.loai.value == 'THUC_PHAM' else 'no' }}">{{ sp.ma_sp }} · {{ sp.ten_sp }}</option>{% endfor %}
+        </select></label>
+        <label>Mã lô<input name="ma_lo" required maxlength="64"></label>
+        <label>Số lượng<input name="so_luong_nhap" type="number" min="1" step="1" required></label>
+        <label>Giá nhập mỗi đơn vị (đ)<input name="gia_nhap" type="number" min="1" step="1" required></label>
+        <label>Ngày sản xuất<input name="ngay_san_xuat" type="date"></label>
+        <label>Hạn sử dụng<input name="han_su_dung" type="date"></label>
+      </div>
+      <button type="button" class="quiet" data-remove-row>Xóa dòng</button>
+    </fieldset>
+  </template>
+</form>
+{% endblock %}

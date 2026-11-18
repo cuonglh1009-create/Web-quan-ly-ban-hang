@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Tổng quan kho{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Tổng quan kho</h1>
+  <a class="button" href="{{ url_for('kho.phieu_nhap_moi') }}">+ Lập phiếu nhập</a>
+</header>
+<p class="notice" data-error hidden role="alert"></p>
+<section aria-label="Số liệu kho" class="metrics" data-dashboard>
+  <a class="panel metric" href="{{ url_for('kho.lo_hang') }}"><span>Lô hàng</span><strong data-lots>…</strong></a>
+  <a class="panel metric" href="{{ url_for('kho.canh_bao') }}#ton-thap"><span>Sản phẩm dưới ngưỡng</span><strong data-low>…</strong></a>
+  <a class="panel metric" href="{{ url_for('kho.canh_bao') }}#sap-het-han"><span>Lô sắp hết hạn</span><strong data-expiring>…</strong></a>
+</section>
+<section class="panel">
+  <h2>Tra cứu phiếu nhập</h2>
+  <form data-find-receipt class="inline-form">
+    <label>Mã phiếu<input name="ma_phieu" required maxlength="64" placeholder="Ví dụ PN-…"></label>
+    <button type="submit">Mở phiếu</button>
+  </form>
+</section>
+{% endblock %}

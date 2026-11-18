@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Theo dõi lô hàng{% endblock %}
+{% block content %}
+<header class="page-head"><h1>Theo dõi lô hàng</h1></header>
+<p class="notice" data-error hidden role="alert"></p>
+<section class="panel" data-lot-list>
+  <form class="inline-form" data-lot-filter>
+    <label>Mã lô<input name="ma_lo" maxlength="64" placeholder="Ví dụ LO01"></label>
+    <label>Mã sản phẩm<input name="ma_sp" maxlength="64" placeholder="Ví dụ SP01"></label>
+    <button type="submit">Lọc</button>
+    <button type="reset" class="secondary">Xóa bộ lọc</button>
+  </form>
+  <p class="muted" data-lot-summary role="status">Đang tải lô hàng…</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Mã lô</th><th>Mã SP</th><th>Ngày nhập</th><th>Ngày sản xuất</th><th>Hạn sử dụng</th><th>Tồn thực tế</th><th>Đang giữ</th><th>Khả dụng</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+</section>
+{% endblock %}
