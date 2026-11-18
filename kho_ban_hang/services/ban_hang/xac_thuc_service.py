@@ -99,20 +99,13 @@ class XacThucService(IXacThuc):
 
     def dang_nhap(self, ten_dang_nhap, mat_khau, ma_phien_web) -> PhienHienTai:
         ten = chuoi_bat_buoc(ten_dang_nhap, "ten_dang_nhap")
-        if not isinstance(mat_khau, str) or not mat_khau or len(mat_khau) > 256:
-            raise LoiDuLieu("TRUONG_BAT_BUOC", "Trường này là bắt buộc", "mat_khau")
         khoa = ten.lower()
         if self.bo_dem.bi_khoa(khoa):
             raise QuaSoLanThu("QUA_SO_LAN_THU", "Thử đăng nhập quá nhiều lần, hãy đợi rồi thử lại")
         nv = self.nv_repo.tim_theo_ten_dang_nhap(ten)
-        if nv is None:
-            check_password_hash(_BAM_GIA, mat_khau)   # tốn thời gian như khi có tài khoản
-            dung = False
-        else:
-            dung = nv.kiem_tra_mat_khau(mat_khau)
-        if not (dung and nv.dang_hoat_dong):   # cùng một thông báo cho mọi lý do
+        if nv is None or not nv.dang_hoat_dong:
             self.bo_dem.ghi_that_bai(khoa)
-            raise ChuaDangNhap("SAI_THONG_TIN", "Tên đăng nhập hoặc mật khẩu không đúng")
+            raise ChuaDangNhap("SAI_THONG_TIN", "Tên đăng nhập không tồn tại hoặc đã bị khóa")
         self.bo_dem.xoa(khoa)
         cu = self._tim_hop_le(ma_phien_web)
         if cu:

@@ -9,7 +9,6 @@
   </div>
   <form id="form-dang-nhap" novalidate>
     <label>Tên đăng nhập <input name="ten_dang_nhap" autocomplete="username" placeholder="Nhập tên đăng nhập" required></label>
-    <label>Mật khẩu <input name="mat_khau" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required></label>
     <p id="loi" class="loi" role="alert" hidden></p>
     <div style="margin-top: .75rem;">
       <button type="submit" class="button-block">Đăng nhập</button>
@@ -26,11 +25,11 @@
       loi.hidden = true;
       try {
         const kq = await Api.post("/api/xac-thuc/dang-nhap", {
-          ten_dang_nhap: form.ten_dang_nhap.value, mat_khau: form.mat_khau.value });
+          ten_dang_nhap: form.ten_dang_nhap.value
+        });
         location.href = kq.trang_chu;           // trình duyệt mở đúng trang theo vai trò
       } catch (e) {
         loi.textContent = e.thong_bao; loi.hidden = false;
-        form.mat_khau.value = "";               // giữ tên đăng nhập, chỉ xóa mật khẩu
       }
     });
   });
