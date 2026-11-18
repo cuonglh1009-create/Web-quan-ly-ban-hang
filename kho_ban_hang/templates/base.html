@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">   <!-- trang Kho của TV1 đọc CSRF từ đây -->
+  <title>{% block title %}Kho &amp; Bán hàng{% endblock %}</title>
+  {% if request.blueprint == 'kho' %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='kho/kho.css') }}">
+    <script type="module" src="{{ url_for('static', filename='kho/kho.js') }}"></script>
+  {% else %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='chung/chung.css') }}">
+  {% endif %}
+  {% block css %}{% endblock %}
+</head>
+<body>
+  {% set trang_kho = request.blueprint == 'kho' %}
+  {% if trang_kho %}
+  <a class="skip" href="#main">Đến nội dung</a>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="{{ url_for('kho.index') }}"><span class="brand-mark" aria-hidden="true">K</span> Quản lý kho</a>
+      <nav aria-label="Phân hệ Kho">
+        {% for endpoint, label in [('kho.index', 'Tổng quan'), ('kho.phieu_nhap_moi', 'Lập phiếu nhập'), ('kho.lo_hang', 'Lô hàng'), ('kho.canh_bao', 'Cảnh báo tồn kho')] %}
+          <a href="{{ url_for(endpoint) }}"{% if request.endpoint == endpoint %} aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+      </nav>
+      <div class="profile">
+        <strong id="nguoi-dung">{{ nhan_vien.ho_ten }}</strong>
+        <button id="nut-dang-xuat" class="quiet" type="button" hidden>Đăng xuất</button>
+      </div>
+    </aside>
+  {% else %}
+  <header class="thanh-tren">
+    <strong>Kho &amp; Bán hàng</strong>
+    <nav id="menu" aria-label="Menu chính"></nav>   <!-- phien.js dựng theo vai trò -->
+    <span id="nguoi-dung"></span>
+    <button id="nut-dang-xuat" type="button" hidden>Đăng xuất</button>
+  </header>
+  {% endif %}
+  <main id="main"{% if trang_kho %} class="main"{% endif %}>{% block content %}{% endblock %}</main>
+  {% if trang_kho %}</div>{% endif %}
+  <script src="{{ url_for('static', filename='chung/phien.js') }}"></script>
+  {% if trang_kho %}<script>Api.khoiTao({ batBuoc: "NV_KHO" });</script>{% endif %}
+  {% block js %}{% endblock %}
+</body>
+</html>
