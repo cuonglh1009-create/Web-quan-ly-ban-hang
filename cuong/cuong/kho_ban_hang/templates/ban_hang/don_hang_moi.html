@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Lập đơn mới{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='ban_hang/ban_hang.css') }}">{% endblock %}
+{% block content %}
+<h1>Lập đơn mới</h1>
+<form id="form-don" class="hop" novalidate>
+  <label>Mã khách (tùy chọn) <input name="ma_kh" autocomplete="off">
+    <span class="loi-truong" data-loi-truong="ma_kh"></span></label>
+  <table>
+    <thead><tr><th>Mã sản phẩm</th><th>Số lượng</th><th></th></tr></thead>
+    <tbody id="dong"></tbody>
+  </table>
+  <div class="hang-nut">
+    <button type="button" id="them-dong">+ Thêm dòng</button>
+    <button type="submit" id="gui">Lập đơn và giữ hàng</button>
+  </div>
+  <p id="loi" class="loi" role="alert" hidden></p>
+</form>
+{% endblock %}
+{% block js %}<script src="{{ url_for('static', filename='ban_hang/don_moi.js') }}"></script>{% endblock %}

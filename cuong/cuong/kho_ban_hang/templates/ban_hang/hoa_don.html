@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Hóa đơn {{ ma_don }}{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='ban_hang/ban_hang.css') }}">{% endblock %}
+{% block content %}
+<div id="trang" data-ma-don="{{ ma_don }}">
+  <h1>Hóa đơn <span id="ma-hd"></span></h1>
+  <p id="loi" class="loi" role="alert" hidden></p>
+  <section class="hop" id="hoa-don" hidden>
+    <p>Đơn <span id="ma-don"></span> · Ngày <span id="ngay"></span> · <span id="phuong-thuc"></span></p>
+    <table>
+      <thead><tr><th>Mã SP</th><th class="so">SL</th><th class="so">Đơn giá</th><th class="so">Thành tiền</th></tr></thead>
+      <tbody id="dong"></tbody>
+    </table>
+    <table>
+      <tr><th>Tổng trước giảm</th><td class="so" id="truoc-giam"></td></tr>
+      <tr><th>Tổng giảm</th><td class="so" id="tong-giam"></td></tr>
+      <tr><th>Thanh toán</th><td class="so"><strong id="tong-tt"></strong></td></tr>
+      <tr id="hang-tien-thoi" hidden><th>Tiền thối</th><td class="so" id="tien-thoi"></td></tr>
+    </table>
+  </section>
+  <div class="hang-nut khong-in">
+    <button type="button" onclick="window.print()">In hóa đơn</button>
+    <a id="ve-don" href="#"><button type="button">Về đơn hàng</button></a>
+  </div>
+</div>
+{% endblock %}
+{% block js %}<script src="{{ url_for('static', filename='ban_hang/hoa_don.js') }}"></script>{% endblock %}

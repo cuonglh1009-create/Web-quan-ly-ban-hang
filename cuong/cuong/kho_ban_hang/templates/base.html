@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">   <!-- trang Kho của TV1 đọc CSRF từ đây -->
+  <title>{% block title %}Kho &amp; Bán hàng{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='chung/chung.css') }}">
+  {% if request.blueprint == 'kho' %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='kho/kho.css') }}">
+  <script type="module" src="{{ url_for('static', filename='kho/kho.js') }}"></script>
+  {% endif %}
+  {% block css %}{% endblock %}
+</head>
+<body>
+  <header class="thanh-tren">
+    <strong>Kho &amp; Bán hàng</strong>
+    <nav id="menu" aria-label="Menu chính"></nav>   <!-- phien.js dựng theo vai trò -->
+    <span id="nguoi-dung"></span>
+    <button id="nut-dang-xuat" type="button" hidden>Đăng xuất</button>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+  <script src="{{ url_for('static', filename='chung/phien.js') }}"></script>
+  {% if request.blueprint == 'kho' %}<script>Api.khoiTao({ batBuoc: "NV_KHO" });</script>{% endif %}   <!-- dựng menu và nút đăng xuất cho trang Kho -->
+  {% block js %}{% endblock %}
+</body>
+</html>
