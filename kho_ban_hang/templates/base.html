@@ -32,7 +32,7 @@
     </aside>
   {% else %}
   <header class="thanh-tren">
-    <strong>Kho &amp; Bán hàng</strong>
+    <a class="brand" href="{{ url_for('ban_hang.trang_chu') if request.blueprint == 'ban_hang' else url_for('xac_thuc.trang_goc') }}"><span class="brand-mark" aria-hidden="true">{{ 'B' if request.blueprint == 'ban_hang' else 'K' }}</span> {{ 'Quản lý bán hàng' if request.blueprint == 'ban_hang' else 'Kho &amp; Bán hàng' }}</a>
     <nav id="menu" aria-label="Menu chính"></nav>   <!-- phien.js dựng theo vai trò -->
     <span id="nguoi-dung"></span>
     <button id="nut-dang-xuat" type="button" hidden>Đăng xuất</button>

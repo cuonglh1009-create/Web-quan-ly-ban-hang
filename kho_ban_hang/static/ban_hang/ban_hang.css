@@ -1,3 +1,67 @@
-#trang-thai { font-size: .9rem; border: 1px solid var(--vien); border-radius: 999px; padding: .1rem .6rem; }
+/* Phong cách Bán hàng đồng bộ với Kho */
+#trang-thai {
+  display: inline-block;
+  font-size: .85rem;
+  font-weight: 650;
+  border-radius: 999px;
+  padding: .2rem .75rem;
+  border: 1px solid var(--line);
+  background: #ecf0ed;
+  color: #344b41;
+}
+#trang-thai.success {
+  background: #e1f2df;
+  color: #285137;
+  border-color: #c4e4c0;
+}
+#trang-thai.danger {
+  background: #fff0eb;
+  color: #822b20;
+  border-color: #efc5bb;
+}
+#trang-thai.warning {
+  background: #ecf0ed;
+  color: #344b41;
+  border-color: var(--line);
+}
 .hang-nut a { text-decoration: none; }
-td input { margin: 0; }
+td input {
+  margin: 0;
+  min-height: 2.2rem;
+  padding: .3rem .5rem;
+}
+tbody button, td button {
+  background: #fff;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: .35rem .75rem;
+  font-size: .85rem;
+  border-radius: .4rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+tbody button:hover, td button:hover {
+  background: #fff0eb;
+  border-color: #efc5bb;
+  color: #b53123;
+}
+.bang-tong {
+  margin-top: 1rem;
+}
+.bang-tong td strong, .hang-noi-bat th, .hang-noi-bat td {
+  font-size: 1.15rem;
+  font-weight: 750;
+  color: var(--accent);
+}
+.hoa-don-header {
+  text-align: center;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px dashed var(--line);
+}
+.hoa-don-header h2 {
+  font-size: 1.4rem;
+  letter-spacing: .05em;
+  color: var(--ink);
+}

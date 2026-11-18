@@ -15,8 +15,10 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
   /* Tổng tiền luôn lấy từ API; nút chỉ hiện theo trạng thái. */
   function ve(d) {
     $("ma-don").textContent = d.ma_don;
-    $("trang-thai").textContent = { CHO_THANH_TOAN: "Chờ thanh toán", DA_THANH_TOAN: "Đã thanh toán",
+    const tt = $("trang-thai");
+    tt.textContent = { CHO_THANH_TOAN: "Chờ thanh toán", DA_THANH_TOAN: "Đã thanh toán",
       DA_HUY: "Đã hủy" }[d.trang_thai] || d.trang_thai;
+    tt.className = "badge " + (d.trang_thai === "DA_THANH_TOAN" ? "success" : d.trang_thai === "DA_HUY" ? "danger" : "warning");
     $("tam-tinh").textContent = Api.tien(d.tam_tinh);
     $("giam-khach").textContent = Api.tien(d.giam_hang_khach);
     $("giam-km").textContent = Api.tien(d.giam_khuyen_mai);

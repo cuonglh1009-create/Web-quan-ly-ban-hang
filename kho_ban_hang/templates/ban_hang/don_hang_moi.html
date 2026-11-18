@@ -2,16 +2,21 @@
 {% block title %}Lập đơn mới{% endblock %}
 {% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='ban_hang/ban_hang.css') }}">{% endblock %}
 {% block content %}
-<h1>Lập đơn mới</h1>
+<header class="page-head">
+  <h1>Lập đơn mới</h1>
+  <a class="button secondary" href="/ban-hang">Quay lại</a>
+</header>
 <form id="form-don" class="hop" novalidate>
-  <label>Mã khách (tùy chọn) <input name="ma_kh" autocomplete="off">
+  <label>Mã khách (tùy chọn) <input name="ma_kh" autocomplete="off" placeholder="Ví dụ: KH001">
     <span class="loi-truong" data-loi-truong="ma_kh"></span></label>
-  <table>
-    <thead><tr><th>Mã sản phẩm</th><th>Số lượng</th><th></th></tr></thead>
-    <tbody id="dong"></tbody>
-  </table>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Mã sản phẩm</th><th>Số lượng</th><th style="width: 80px;"></th></tr></thead>
+      <tbody id="dong"></tbody>
+    </table>
+  </div>
   <div class="hang-nut">
-    <button type="button" id="them-dong">+ Thêm dòng</button>
+    <button type="button" id="them-dong" class="secondary">+ Thêm dòng</button>
     <button type="submit" id="gui">Lập đơn và giữ hàng</button>
   </div>
   <p id="loi" class="loi" role="alert" hidden></p>

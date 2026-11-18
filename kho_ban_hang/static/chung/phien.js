@@ -45,7 +45,11 @@ const Api = {
       const muc = p.nguoi_dung.vai_tro === "NV_KHO" ? [["/kho", "Kho"]] : [["/ban-hang", "Bán hàng"],
                     ["/ban-hang/don-hang/moi", "Lập đơn"]];
       for (const [href, nhan] of muc) {
-        const a = document.createElement("a"); a.href = href; a.textContent = nhan; menu.append(a);
+        const a = document.createElement("a"); a.href = href; a.textContent = nhan;
+        if (location.pathname === href) {
+          a.setAttribute("aria-current", "page");
+        }
+        menu.append(a);
       }
     }
     ten.textContent = p.nguoi_dung.ho_ten;

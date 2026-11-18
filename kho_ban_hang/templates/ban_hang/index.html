@@ -1,18 +1,24 @@
 {% extends "base.html" %}
 {% block title %}Bán hàng{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='ban_hang/ban_hang.css') }}">{% endblock %}
 {% block content %}
-<h1>Bán hàng</h1>
+<header class="page-head">
+  <h1>Bán hàng</h1>
+  <a class="button" href="/ban-hang/don-hang/moi">+ Lập đơn mới</a>
+</header>
 <section class="hop">
   <h2>Lập đơn mới</h2>
-  <p>Nhập mã sản phẩm, số lượng và mã khách (nếu có); hệ thống giữ hàng ngay khi lập đơn.</p>
-  <a href="/ban-hang/don-hang/moi"><button type="button">Lập đơn</button></a>
+  <p class="muted">Nhập mã sản phẩm, số lượng và mã khách (nếu có); hệ thống giữ hàng ngay khi lập đơn.</p>
+  <div class="hang-nut">
+    <a href="/ban-hang/don-hang/moi"><button type="button">+ Bắt đầu lập đơn</button></a>
+  </div>
 </section>
 <section class="hop">
   <h2>Tra cứu đơn theo mã</h2>
-  <form id="form-tra-cuu" novalidate>
-    <label>Mã đơn <input name="ma_don" placeholder="DH000001" required></label>
-    <p id="loi" class="loi" role="alert" hidden></p>
+  <form id="form-tra-cuu" novalidate class="inline-form">
+    <label>Mã đơn <input name="ma_don" placeholder="Ví dụ: DH000001" required></label>
     <button type="submit">Mở đơn</button>
+    <p id="loi" class="loi" role="alert" hidden style="width: 100%;"></p>
   </form>
 </section>
 {% endblock %}

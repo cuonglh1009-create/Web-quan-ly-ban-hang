@@ -3,22 +3,26 @@
 {% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='ban_hang/ban_hang.css') }}">{% endblock %}
 {% block content %}
 <div id="trang" data-ma-don="{{ ma_don }}">
-  <h1>Đơn <span id="ma-don"></span> <small id="trang-thai"></small></h1>
+  <header class="page-head">
+    <h1>Đơn <span id="ma-don"></span> <span id="trang-thai"></span></h1>
+    <a class="button secondary" href="/ban-hang">Danh sách đơn</a>
+  </header>
   <p id="loi" class="loi" role="alert" hidden></p>
   <section class="hop" id="tong-hop" hidden>
-    <table>
+    <h2>Tổng hợp thanh toán</h2>
+    <table class="bang-tong">
       <tr><th>Tạm tính</th><td class="so" id="tam-tinh"></td></tr>
       <tr><th>Giảm theo hạng khách</th><td class="so" id="giam-khach"></td></tr>
       <tr><th>Giảm khuyến mại</th><td class="so" id="giam-km"></td></tr>
-      <tr><th>Số phải trả</th><td class="so"><strong id="phai-tra"></strong></td></tr>
+      <tr class="hang-noi-bat"><th>Số phải trả</th><td class="so"><strong id="phai-tra"></strong></td></tr>
     </table>
   </section>
 
   <!-- Chỉ hiện theo trạng thái đơn (do don_chi_tiet.js bật/tắt) -->
   <section class="hop" id="khu-km" hidden>
     <h2>Mã khuyến mại</h2>
-    <form id="form-km" novalidate>
-      <label>Mã <input name="ma_km" autocomplete="off"><span class="loi-truong" data-loi-truong="ma_km"></span></label>
+    <form id="form-km" novalidate class="inline-form">
+      <label>Mã khuyến mại <input name="ma_km" placeholder="Ví dụ: GIAM10" autocomplete="off"><span class="loi-truong" data-loi-truong="ma_km"></span></label>
       <button type="submit">Áp dụng</button>
     </form>
   </section>
@@ -32,18 +36,22 @@
           <option value="CHUYEN_KHOAN">Chuyển khoản</option>
         </select></label>
       <div id="nhom-tien-mat">
-        <label>Tiền khách đưa <input name="tien_khach_dua" inputmode="numeric">
+        <label>Tiền khách đưa <input name="tien_khach_dua" inputmode="numeric" placeholder="Ví dụ: 500000">
           <span class="loi-truong" data-loi-truong="thong_tin.tien_khach_dua"></span></label>
       </div>
       <div id="nhom-chuyen-khoan" hidden>
-        <label>Số tiền đối soát <input name="so_tien_doi_soat" inputmode="numeric">
-          <span class="loi-truong" data-loi-truong="thong_tin.so_tien_doi_soat"></span></label>
-        <label>Ngân hàng <input name="ten_ngan_hang">
-          <span class="loi-truong" data-loi-truong="thong_tin.ten_ngan_hang"></span></label>
-        <label>Mã giao dịch ngân hàng <input name="ma_giao_dich_ngan_hang">
+        <div class="field-grid">
+          <label>Số tiền đối soát <input name="so_tien_doi_soat" inputmode="numeric" placeholder="Nhập số tiền">
+            <span class="loi-truong" data-loi-truong="thong_tin.so_tien_doi_soat"></span></label>
+          <label>Ngân hàng <input name="ten_ngan_hang" placeholder="Ví dụ: Vietcombank">
+            <span class="loi-truong" data-loi-truong="thong_tin.ten_ngan_hang"></span></label>
+        </div>
+        <label>Mã giao dịch ngân hàng <input name="ma_giao_dich_ngan_hang" placeholder="Ví dụ: MB12345678">
           <span class="loi-truong" data-loi-truong="thong_tin.ma_giao_dich_ngan_hang"></span></label>
       </div>
-      <button type="submit">Thanh toán và xuất hóa đơn</button>
+      <div style="margin-top: 1rem;">
+        <button type="submit">Thanh toán và xuất hóa đơn</button>
+      </div>
     </form>
   </section>
 
