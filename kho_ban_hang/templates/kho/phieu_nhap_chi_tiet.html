@@ -1,7 +1,9 @@
-{% extends "base.html" %}
-{% block title %}Phiếu nhập {{ ma_phieu }}{% endblock %}
+{% extends "kho/layout.html" %}
+{% block title %}Phiếu nhập {{ ma_phieu }}<script type="application/json" id="du-lieu-kho">{{ danh_muc|tojson }}</script>
+{% endblock %}
 {% block content %}
-<header class="page-head"><h1>Phiếu nhập {{ ma_phieu }}</h1></header>
+<a class="breadcrumb" href="{{ url_for('kho.danh_sach_phieu') }}">← Phiếu nhập</a>
+<header class="page-head"><div><h1>Chi tiết phiếu nhập</h1><p class="mono muted">{{ ma_phieu }}</p></div><button type="button" class="button secondary" data-print>In phiếu</button></header>
 <p class="notice" data-error hidden role="alert"></p>
 <section class="panel" data-receipt="{{ ma_phieu }}">
   <p data-loading aria-live="polite">Đang tải phiếu…</p>
@@ -13,9 +15,10 @@
       <div><dt>Người lập</dt><dd data-employee></dd></div>
     </dl>
     <div class="table-wrap"><table>
-      <thead><tr><th>Mã sản phẩm</th><th>Mã lô</th><th>Số lượng</th><th>Giá nhập (đ)</th><th>Ngày sản xuất</th><th>Hạn sử dụng</th></tr></thead>
+      <thead><tr><th>Sản phẩm</th><th>Mã lô</th><th>Số lượng</th><th>Giá nhập (đ)</th><th>Ngày sản xuất</th><th>Hạn sử dụng</th></tr></thead>
       <tbody></tbody>
     </table></div>
+    <div class="receipt-total"><span>Tổng giá trị nhập</span><strong data-total>…</strong></div>
     <div class="actions"><button type="button" data-confirm hidden>Xác nhận nhập kho</button></div>
     <p data-feedback role="status" hidden></p>
   </div>

@@ -1,0 +1,18 @@
+{% extends "kho/layout.html" %}
+{% block title %}Sản phẩm{% endblock %}
+{% block content %}
+<header class="page-head"><div><h1>Sản phẩm</h1><p class="muted">Tra cứu mặt hàng và trạng thái kinh doanh.</p></div><a class="button" href="{{ url_for('kho.phieu_nhap_moi') }}">+ Nhập hàng</a></header>
+<section class="panel table-panel" data-product-list>
+  <div class="filter-bar"><label class="search-label"><span class="sr-only">Tìm sản phẩm</span><input type="search" data-product-search placeholder="Tìm tên hoặc mã sản phẩm…"></label>
+    <label><span class="sr-only">Trạng thái kinh doanh</span><select data-product-status><option value="">Tất cả trạng thái</option><option value="KINH_DOANH">Đang kinh doanh</option><option value="NGUNG_KINH_DOANH">Ngừng kinh doanh</option></select></label>
+  </div>
+  <div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Nhóm hàng</th><th>Đơn vị</th><th class="numeric">Giá niêm yết</th><th>Trạng thái</th></tr></thead><tbody>
+    {% for sp in san_pham %}<tr data-product-row data-search="{{ sp.ma_sp }} {{ sp.ten_sp }}" data-status="{{ sp.trang_thai }}">
+      <td><strong>{{ sp.ten_sp }}</strong><small class="subline">{{ sp.ma_sp }}</small></td>
+      <td>{{ {'THUC_PHAM':'Thực phẩm','DIEN_TU':'Điện tử','THOI_TRANG':'Thời trang'}.get(sp.loai,sp.loai) }}</td><td>{{ sp.don_vi_tinh }}</td><td class="numeric">{{ "{:,}".format(sp.gia_niem_yet).replace(',','.') }} ₫</td>
+      <td><span class="badge {{ 'success' if sp.trang_thai=='KINH_DOANH' else 'neutral' }}">{{ 'Đang kinh doanh' if sp.trang_thai=='KINH_DOANH' else 'Ngừng kinh doanh' }}</span></td>
+    </tr>{% endfor %}
+    <tr data-products-empty hidden><td colspan="5" class="empty">Không tìm thấy sản phẩm phù hợp.</td></tr>
+  </tbody></table></div><div class="table-footer" data-product-count>{{ san_pham|length }} sản phẩm</div>
+</section>
+{% endblock %}

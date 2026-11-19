@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}Quản lý kho{% endblock %} · Kho &amp; Bán hàng</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='kho/kho.css') }}">
+  <script type="module" src="{{ url_for('static', filename='kho/kho.js') }}"></script>
+</head>
+<body>
+<a class="skip" href="#main">Đến nội dung</a>
+<div class="shell">
+  <aside class="sidebar" id="kho-navigation">
+    <a class="brand" href="{{ url_for('kho.index') }}"><span class="brand-mark" aria-hidden="true">K</span><span>Quản lý kho<small>Kho &amp; Bán hàng</small></span></a>
+    <nav aria-label="Phân hệ Kho">
+      {% for endpoint, label, icon in [('kho.index','Tổng quan','◫'),('kho.danh_sach_phieu','Phiếu nhập','▤'),('kho.lo_hang','Lô hàng','▦'),('kho.san_pham','Sản phẩm','▧'),('kho.canh_bao','Cảnh báo','◇')] %}
+      {% set selected = request.endpoint == endpoint or (endpoint == 'kho.danh_sach_phieu' and request.endpoint in ('kho.phieu_nhap_moi','kho.phieu_nhap_chi_tiet')) %}
+      <a href="{{ url_for(endpoint) }}"{% if selected %} aria-current="page"{% endif %}><span class="nav-symbol" aria-hidden="true">{{ icon }}</span>{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-bottom"><span class="status-dot"></span> Phân hệ Kho</div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar">
+      <button type="button" class="icon-button mobile-menu" data-toggle-menu aria-controls="kho-navigation" aria-expanded="false" aria-label="Mở menu">☰</button>
+      <span class="topbar-title">Không gian làm việc <span>/</span> Kho</span>
+      <div class="account"><span class="avatar" aria-hidden="true">{{ nhan_vien.ho_ten[:1] }}</span><span><strong id="nguoi-dung">{{ nhan_vien.ho_ten }}</strong><small>Nhân viên kho</small></span>
+        <button id="nut-dang-xuat" class="quiet" type="button" hidden>Đăng xuất</button>
+      </div>
+    </header>
+    <main id="main" class="main">{% block content %}{% endblock %}</main>
+    <footer class="page-footer">Kho &amp; Bán hàng <span>Quản lý theo từng lô hàng</span></footer>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='chung/phien.js') }}"></script>
+<script>Api.khoiTao({ batBuoc: "NV_KHO" });</script>
+</body>
+</html>

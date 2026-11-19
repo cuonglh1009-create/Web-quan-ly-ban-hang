@@ -1,0 +1,10 @@
+<div class="table-wrap"><table>
+  <thead><tr><th>Phiếu nhập</th><th>Nhà cung cấp</th><th>Ngày nhập</th><th class="numeric">Giá trị nhập</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+  <tbody>{% for p in phieu_list %}
+    <tr><td><a class="row-link" href="{{ url_for('kho.phieu_nhap_chi_tiet', ma_phieu=p.ma_phieu) }}">{{ p.ma_phieu }}</a><small class="subline">{{ p.so_dong }} mặt hàng</small></td>
+      <td>{{ p.ten_ncc }}</td><td class="nowrap">{{ p.ngay_nhap.split('-')|reverse|join('/') }}</td>
+      <td class="numeric nowrap">{{ "{:,}".format(p.tong_gia_tri).replace(',', '.') }} ₫</td>
+      <td><span class="badge {{ 'success' if p.trang_thai=='DA_XAC_NHAN' else 'pending' }}">{{ 'Đã xác nhận' if p.trang_thai=='DA_XAC_NHAN' else 'Nháp' }}</span></td>
+      <td><a class="open-link" href="{{ url_for('kho.phieu_nhap_chi_tiet',ma_phieu=p.ma_phieu) }}" aria-label="Mở phiếu {{ p.ma_phieu }}">Mở →</a></td></tr>
+  {% else %}<tr><td colspan="6" class="empty">Chưa có phiếu nhập phù hợp. <a href="{{ url_for('kho.phieu_nhap_moi') }}">Lập phiếu mới</a></td></tr>{% endfor %}</tbody>
+</table></div>

@@ -1,19 +1,19 @@
-{% extends "base.html" %}
-{% block title %}Theo dõi lô hàng{% endblock %}
+{% extends "kho/layout.html" %}
+{% block title %}Lô hàng{% endblock %}
 {% block content %}
-<header class="page-head"><h1>Theo dõi lô hàng</h1></header>
+<header class="page-head"><div><h1>Lô hàng</h1><p class="muted">Theo dõi lượng hàng thực tế, đang giữ và sẵn sàng bán.</p></div><a class="button" href="{{ url_for('kho.phieu_nhap_moi') }}">+ Nhập hàng</a></header>
 <p class="notice" data-error hidden role="alert"></p>
-<section class="panel" data-lot-list>
-  <form class="inline-form" data-lot-filter>
-    <label>Mã lô<input name="ma_lo" maxlength="64" placeholder="Ví dụ LO01"></label>
-    <label>Mã sản phẩm<input name="ma_sp" maxlength="64" placeholder="Ví dụ SP01"></label>
-    <button type="submit">Lọc</button>
-    <button type="reset" class="secondary">Xóa bộ lọc</button>
+<section class="panel table-panel" data-lot-list>
+  <form class="filter-bar" data-lot-filter>
+    <label class="search-label"><span class="sr-only">Tìm lô hàng</span><input type="search" name="q" maxlength="120" placeholder="Tìm mã lô, tên sản phẩm, nhà cung cấp…"></label>
+    <label><span class="sr-only">Tình trạng lô</span><select name="tinh_trang"><option value="">Tất cả tình trạng</option><option value="con_hang">Còn khả dụng</option><option value="sap_het_han">Sắp hết hạn</option><option value="het_han">Đã hết hạn</option><option value="het_hang">Hết tồn thực tế</option></select></label>
+    <button type="submit">Tìm kiếm</button><button type="reset" class="button secondary">Xóa lọc</button>
   </form>
-  <p class="muted" data-lot-summary role="status">Đang tải lô hàng…</p>
   <div class="table-wrap"><table>
-    <thead><tr><th>Mã lô</th><th>Mã SP</th><th>Ngày nhập</th><th>Ngày sản xuất</th><th>Hạn sử dụng</th><th>Tồn thực tế</th><th>Đang giữ</th><th>Khả dụng</th></tr></thead>
+    <thead><tr><th>Lô hàng</th><th>Sản phẩm</th><th>Nhà cung cấp</th><th>Hạn sử dụng</th><th class="numeric">Thực tế</th><th class="numeric">Đang giữ</th><th class="numeric">Khả dụng</th><th>Tình trạng</th></tr></thead>
     <tbody></tbody>
   </table></div>
+  <div class="table-footer"><span data-lot-summary role="status">Đang tải lô hàng…</span><div class="pagination"><button class="button secondary" type="button" data-prev aria-label="Trang trước">←</button><span data-page></span><button class="button secondary" type="button" data-next aria-label="Trang sau">→</button></div></div>
 </section>
+<script type="application/json" id="du-lieu-kho">{{ danh_muc|tojson }}</script>
 {% endblock %}

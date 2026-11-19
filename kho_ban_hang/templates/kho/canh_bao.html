@@ -1,17 +1,18 @@
-{% extends "base.html" %}
-{% block title %}Cảnh báo tồn kho{% endblock %}
+{% extends "kho/layout.html" %}
+{% block title %}Cảnh báo tồn kho<script type="application/json" id="du-lieu-kho">{{ danh_muc|tojson }}</script>
+{% endblock %}
 {% block content %}
-<header class="page-head"><h1>Cảnh báo tồn kho</h1></header>
+<header class="page-head"><div><h1>Cảnh báo tồn kho</h1><p class="muted">Ưu tiên bổ sung hàng tồn thấp và xử lý lô gần hết hạn.</p></div><a class="button secondary" href="{{ url_for('kho.lo_hang') }}">Xem lô hàng →</a></header>
 <p class="notice" data-error hidden role="alert"></p>
 <div class="alert-grid" data-alert-list>
   <section class="panel" id="ton-thap">
-    <h2>Tồn thấp</h2>
+    <div class="section-head"><h2>Tồn thấp</h2><span class="badge pending" data-low-count>…</span></div>
     <ul data-low-list class="alert-list" aria-label="Sản phẩm dưới ngưỡng">
       <li>Đang tải cảnh báo…</li>
     </ul>
   </section>
   <section class="panel" id="sap-het-han">
-    <h2>Sắp hết hạn</h2>
+    <div class="section-head"><h2>Sắp hết hạn</h2><span class="badge danger" data-expiring-count>…</span></div>
     <ul data-expiring-list class="alert-list" aria-label="Lô hàng sắp hết hạn">
       <li>Đang tải cảnh báo…</li>
     </ul>

@@ -1,0 +1,14 @@
+{% extends "kho/layout.html" %}
+{% block title %}Phiếu nhập{% endblock %}
+{% block content %}
+<header class="page-head"><div><h1>Phiếu nhập</h1><p class="muted">Tra cứu chứng từ và tiếp tục xác nhận phiếu nháp.</p></div><a class="button" href="{{ url_for('kho.phieu_nhap_moi') }}">+ Lập phiếu nhập</a></header>
+<section class="panel table-panel">
+  <form class="filter-bar" method="get">
+    <label class="search-label"><span class="sr-only">Tìm phiếu</span><input type="search" name="q" value="{{ q }}" maxlength="120" placeholder="Tìm theo mã phiếu, nhà cung cấp…"></label>
+    <label><span class="sr-only">Trạng thái</span><select name="trang_thai">{% for val,label in [('', 'Tất cả trạng thái'),('NHAP','Nháp'),('DA_XAC_NHAN','Đã xác nhận')] %}<option value="{{ val }}"{% if val==status %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <button type="submit">Tìm kiếm</button>{% if q or status %}<a class="text-link" href="{{ url_for('kho.danh_sach_phieu') }}">Xóa lọc</a>{% endif %}
+  </form>
+  {% include "kho/_phieu_table.html" %}
+  <div class="table-footer">{{ phieu_list|length }} phiếu phù hợp</div>
+</section>
+{% endblock %}
