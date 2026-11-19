@@ -1,7 +1,14 @@
-__pycache__/
+﻿__pycache__/
 *.pyc
 .venv/
 instance/
 *.db
 *.db-shm
 *.db-wal
+
+# Bien moi truong - khong commit len Git
+.env
+
+# VSCode cai dat ca nhan (launch.json va settings.json se duoc commit)
+.vscode/extensions.json
+

@@ -1,0 +1,27 @@
+﻿{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Chay Flask (Dev)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "flask",
+            "args": [
+                "--app", "kho_ban_hang.app",
+                "run",
+                "--debug",
+                "--port", "5000"
+            ],
+            "env": {
+                "FLASK_ENV": "development",
+                "KBH_KHOA_BI_MAT": "dev-local-secret-key-123456",
+                "KBH_CSDL": "kho_ban_hang.db",
+                "KBH_COOKIE_SECURE": "0",
+                "KBH_DUNG_KHO_GIA": "0"
+            },
+            "cwd": "${workspaceFolder}",
+            "jinja": true,
+            "justMyCode": true
+        }
+    ]
+}
