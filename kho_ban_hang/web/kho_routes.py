@@ -4,6 +4,7 @@ from datetime import date, datetime
 from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 
 from ..contracts.kho_dto import BoLocLoDTO, DongNhapDTO, PhieuNhapDTO
+from ..repositories.kho.kho_truy_van_repository import khop_tu_khoa
 from ..domain.errors import ChuaDangNhapError, DuLieuKhongHopLeError
 
 
@@ -77,32 +78,49 @@ def tao_kho_blueprint(lay_controller, lay_ma_phien, kiem_tra_csrf, endpoint_dang
         except ChuaDangNhapError:
             return redirect(url_for(endpoint_dang_nhap))
         if chuan_bi is not None:
-            bien.update(chuan_bi(controller.thanh_phan_kho))
+            bien.update(chuan_bi(controller))
         return render_template(f"kho/{ten}.html", nhan_vien=nhan_vien, **bien)
 
     @bp.get("/kho")
     def index():
-        return trang("index")
+        return trang("index", lambda c: {
+            "phieu_list": c.danh_sach_phieu(lay_ma_phien())[:5],
+            "ngay_hom_nay": date.today().strftime("%d/%m/%Y"),
+        })
 
     @bp.get("/kho/phieu-nhap/moi")
     def phieu_nhap_moi():
-        return trang("phieu_nhap_moi", lambda kho: {
+        return trang("phieu_nhap_moi", lambda c: {
             "ngay_hom_nay": date.today().isoformat(),
-            "san_pham": kho.san_pham_repo.tim_tat_ca(),
-            "nha_cung_cap": [ncc for ncc in kho.nha_cung_cap_repo.tim_tat_ca() if ncc.dang_hoat_dong()],
+            "san_pham": c.thanh_phan_kho.san_pham_repo.tim_tat_ca(),
+            "nha_cung_cap": [ncc for ncc in c.thanh_phan_kho.nha_cung_cap_repo.tim_tat_ca() if ncc.dang_hoat_dong()],
         })
+
+    @bp.get("/kho/phieu-nhap")
+    def danh_sach_phieu():
+        q = request.args.get("q", "").strip()[:120]
+        status = request.args.get("trang_thai", "")
+        if status not in ("", "NHAP", "DA_XAC_NHAN"):
+            status = ""
+        return trang("danh_sach_phieu", lambda c: {
+            "phieu_list": c.danh_sach_phieu(lay_ma_phien(), q, status), "q": q, "status": status,
+        })
+
+    @bp.get("/kho/san-pham")
+    def san_pham():
+        return trang("san_pham", lambda c: c.du_lieu_giao_dien(lay_ma_phien()))
 
     @bp.get("/kho/phieu-nhap/<ma_phieu>")
     def phieu_nhap_chi_tiet(ma_phieu):
-        return trang("phieu_nhap_chi_tiet", ma_phieu=ma_phieu)
+        return trang("phieu_nhap_chi_tiet", lambda c: {"danh_muc": c.du_lieu_giao_dien(lay_ma_phien())}, ma_phieu=ma_phieu)
 
     @bp.get("/kho/lo-hang")
     def lo_hang():
-        return trang("lo_hang")
+        return trang("lo_hang", lambda c: {"danh_muc": c.du_lieu_giao_dien(lay_ma_phien())})
 
     @bp.get("/kho/canh-bao")
     def canh_bao():
-        return trang("canh_bao")
+        return trang("canh_bao", lambda c: {"danh_muc": c.du_lieu_giao_dien(lay_ma_phien())})
 
     @bp.before_request
     def bao_ve_api_kho():

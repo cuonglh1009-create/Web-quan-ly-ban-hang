@@ -3,7 +3,13 @@ import { goiApi } from "../chung/api.js";
 const api = "/api/kho";
 const phieuPath = "/kho/phieu-nhap/";
 const number = new Intl.NumberFormat("vi-VN");
-const dateText = (value) => value ? value.split("-").reverse().join("/") : "—";
+const money = value => number.format(value) + " ₫";
+const dateText = value => value ? value.split("-").reverse().join("/") : "—";
+const catalog = JSON.parse(document.querySelector("#du-lieu-kho")?.textContent || "{}");
+const products = new Map((catalog.san_pham || []).map(p => [p.ma_sp, p]));
+const suppliers = new Map((catalog.nha_cung_cap || []).map(p => [p.ma_ncc, p.ten_ncc]));
+const normalize = value => (value || "").toLocaleLowerCase("vi").replaceAll("đ","d")
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
 function hienLoi(loi, form) {
   const notice = document.querySelector("[data-error]");
@@ -25,203 +31,260 @@ function hienLoi(loi, form) {
   notice.scrollIntoView({ block: "nearest" });
 }
 
-function dienBang(tbody, rows) {
-  tbody.replaceChildren();
-  for (const values of rows) {
-    const row = tbody.insertRow();
-    for (const value of values) row.insertCell().textContent = value ?? "—";
-  }
+function cell(row, text, className="") {
+  const td = row.insertCell();
+  td.textContent = text ?? "—";
+  td.className = className;
+  return td;
+}
+
+function badge(text, className) {
+  const span = document.createElement("span");
+  span.className = "badge " + className;
+  span.textContent = text;
+  return span;
+}
+
+function lotStatus(row) {
+  const today = new Date();
+  const current = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  const expiry = row.han_su_dung ? Date.parse(row.han_su_dung + "T00:00:00Z") : null;
+  if (expiry !== null && expiry < current) return ["Đã hết hạn", "danger", "het_han"];
+  if (row.ton_thuc_te === 0) return ["Hết hàng", "neutral", "het_hang"];
+  if (expiry !== null && expiry <= current + catalog.so_ngay_canh_bao * 86400000) return ["Sắp hết hạn", "pending", "sap_het_han"];
+  if (row.kha_dung === 0) return ["Không khả dụng", "neutral", "khong_kha_dung"];
+  return ["Còn khả dụng", "success", "con_hang"];
 }
 
 async function dashboard(section) {
-  const [lo, canhBao] = await Promise.all([goiApi(api + "/lo-hang"), goiApi(api + "/canh-bao")]);
-  section.querySelector("[data-lots]").textContent = number.format(lo.length);
-  section.querySelector("[data-low]").textContent = number.format(canhBao.ton_thap.length);
-  section.querySelector("[data-expiring]").textContent = number.format(canhBao.sap_het_han.length);
+  const [lots, alerts] = await Promise.all([goiApi(api + "/lo-hang"), goiApi(api + "/canh-bao")]);
+  section.querySelector("[data-lots]").textContent = number.format(lots.length);
+  section.querySelector("[data-available]").textContent = number.format(lots.reduce((sum, p) => sum+p.kha_dung, 0));
+  section.querySelector("[data-low]").textContent = number.format(alerts.ton_thap.length);
+  section.querySelector("[data-expiring]").textContent = number.format(alerts.sap_het_han.length);
+  const preview = document.querySelector("[data-alert-preview]");
+  preview.replaceChildren();
+  for (const warning of [...alerts.ton_thap.slice(0,2), ...alerts.sap_het_han.slice(0,2)]) {
+    const item = preview.appendChild(document.createElement("div"));
+    item.className = "alert-preview";
+    item.append(badge(warning.ma_lo ? "Sắp hết hạn" : "Tồn thấp", warning.ma_lo ? "danger" : "pending"));
+    const title = item.appendChild(document.createElement("strong"));
+    title.textContent = warning.ma_lo || warning.ma_sp;
+    const text = item.appendChild(document.createElement("p"));
+    text.textContent = warning.noi_dung;
+  }
+  if (!preview.children.length) {
+    const text = preview.appendChild(document.createElement("p"));
+    text.className = "empty";
+    text.textContent = "Chưa có cảnh báo cần xử lý.";
+  }
 }
 
 function formPhieu(form) {
-  const rows = form.querySelector("[data-rows]");
-  const template = form.querySelector("[data-row-template]");
+  const holder = form.querySelector("[data-rows]");
+  const row = form.querySelector("[data-row-template]").content.firstElementChild.cloneNode(true);
+  holder.append(row);
   const save = form.querySelector('button[type="submit"]');
-
-  function danhSo() {
-    rows.querySelectorAll("fieldset").forEach((row, index) => {
-      row.querySelector("[data-row-title]").textContent = "Dòng " + (index + 1);
-      row.querySelector("[data-remove-row]").disabled = rows.children.length === 1;
-    });
-  }
-
-  function themDong(focus = false) {
-    const newRow = template.content.firstElementChild.cloneNode(true);
-    const sp = newRow.elements.namedItem("ma_sp");
-    sp.addEventListener("change", () => {
-      const canNgay = sp.selectedOptions[0]?.dataset.food === "yes";
-      newRow.elements.namedItem("ngay_san_xuat").required = canNgay;
-      newRow.elements.namedItem("han_su_dung").required = canNgay;
-    });
-    newRow.querySelector("[data-remove-row]").addEventListener("click", () => {
-      newRow.remove();
-      danhSo();
-      form.querySelector("[data-add-row]").focus();
-    });
-    rows.append(newRow);
-    danhSo();
-    if (focus) sp.focus();
-  }
-
-  themDong();
-  form.querySelector("[data-add-row]").addEventListener("click", () => themDong(true));
-  form.addEventListener("input", ({ target }) => target.removeAttribute("aria-invalid"));
-  form.addEventListener("submit", async (event) => {
+  row.elements.ma_sp.addEventListener("change", () => {
+    const food = row.elements.ma_sp.selectedOptions[0]?.dataset.food === "yes";
+    row.elements.ngay_san_xuat.required = food;
+    row.elements.han_su_dung.required = food;
+  });
+  form.addEventListener("input", ({ target }) => {
+    target.removeAttribute("aria-invalid");
+    const quantity = Number(row.elements.so_luong_nhap.value) || 0;
+    const price = Number(row.elements.gia_nhap.value) || 0;
+    form.querySelector("[data-receipt-total]").textContent = money(quantity * price);
+  });
+  let submitted = false;
+  form.addEventListener("submit", async event => {
     event.preventDefault();
+    if (save.disabled) return;
     hienLoi(null);
-    form.querySelectorAll('[aria-invalid="true"]').forEach((el) => el.removeAttribute("aria-invalid"));
-    const dong = Array.from(rows.children, ({ elements }) => {
-      const get = (name) => elements.namedItem(name).value;
-      return {
-        ma_sp: get("ma_sp"), ma_lo: get("ma_lo").trim(),
-        so_luong_nhap: Number(get("so_luong_nhap")), gia_nhap: Number(get("gia_nhap")),
-        ngay_san_xuat: get("ngay_san_xuat") || null, han_su_dung: get("han_su_dung") || null,
-      };
-    });
+    const get = name => row.elements.namedItem(name).value;
+    const dong = [{
+      ma_sp: get("ma_sp"), ma_lo: get("ma_lo").trim(),
+      so_luong_nhap: Number(get("so_luong_nhap")), gia_nhap: Number(get("gia_nhap")),
+      ngay_san_xuat: get("ngay_san_xuat") || null, han_su_dung: get("han_su_dung") || null,
+    }];
     save.disabled = true;
+    save.textContent = "Đang lưu…";
     try {
-      const phieu = await goiApi(api + "/phieu-nhap", {
+      const result = await goiApi(api + "/phieu-nhap", {
         method: "POST",
-        body: { ma_ncc: form.elements.ma_ncc.value, ngay_nhap: form.elements.ngay_nhap.value, dong },
+        body: {ma_ncc: form.elements.ma_ncc.value, ngay_nhap: form.elements.ngay_nhap.value, dong},
       });
-      location.assign(phieuPath + encodeURIComponent(phieu.ma_phieu));
-    } catch (error) {
-      hienLoi(error, form);
-    } finally {
-      save.disabled = false;
-    }
+      submitted = true;
+      location.assign(phieuPath + encodeURIComponent(result.ma_phieu));
+    } catch (error) { hienLoi(error, form); }
+    finally { save.disabled = false; save.textContent = "Lưu phiếu nháp"; }
+  });
+  let dirty = false;
+  form.addEventListener("input", () => { dirty = true; });
+  window.addEventListener("beforeunload", event => {
+    if (dirty && !submitted) { event.preventDefault(); event.returnValue = ""; }
   });
 }
 
 async function chiTietPhieu(section) {
   const path = api + "/phieu-nhap/" + encodeURIComponent(section.dataset.receipt);
-  const nutXacNhan = section.querySelector("[data-confirm]");
+  const confirm = section.querySelector("[data-confirm]");
   const feedback = section.querySelector("[data-feedback]");
-  const loading = section.querySelector("[data-loading]");
-  function hienPhieu(phieu) {
-    const daXacNhan = phieu.trang_thai === "DA_XAC_NHAN";
-    const badge = section.querySelector("[data-status]");
-    badge.textContent = daXacNhan ? "Đã xác nhận" : "Nháp";
-    badge.classList.toggle("success", daXacNhan);
-    section.querySelector("[data-supplier]").textContent = phieu.ma_ncc;
-    section.querySelector("[data-date]").textContent = dateText(phieu.ngay_nhap);
-    section.querySelector("[data-employee]").textContent = phieu.ma_nv;
-    dienBang(section.querySelector("tbody"), phieu.dong.map((dong) => [
-      dong.ma_sp, dong.ma_lo, number.format(dong.so_luong_nhap), number.format(dong.gia_nhap),
-      dateText(dong.ngay_san_xuat), dateText(dong.han_su_dung),
-    ]));
-    nutXacNhan.hidden = daXacNhan;
+  function show(receipt) {
+    const completed = receipt.trang_thai === "DA_XAC_NHAN";
+    const status = section.querySelector("[data-status]");
+    status.textContent = completed ? "Đã xác nhận" : "Nháp";
+    status.className = "badge " + (completed ? "success" : "pending");
+    section.querySelector("[data-supplier]").textContent = suppliers.get(receipt.ma_ncc) || receipt.ma_ncc;
+    section.querySelector("[data-date]").textContent = dateText(receipt.ngay_nhap);
+    section.querySelector("[data-employee]").textContent = receipt.ma_nv;
+    const tbody = section.querySelector("tbody");
+    tbody.replaceChildren();
+    for (const item of receipt.dong) {
+      const tr = tbody.insertRow();
+      const productCell = cell(tr, products.get(item.ma_sp)?.ten_sp || item.ma_sp);
+      const code = productCell.appendChild(document.createElement("small"));
+      code.className = "subline"; code.textContent = item.ma_sp;
+      cell(tr, item.ma_lo);
+      cell(tr, number.format(item.so_luong_nhap), "numeric");
+      cell(tr, money(item.gia_nhap), "numeric nowrap");
+      cell(tr, dateText(item.ngay_san_xuat), "nowrap");
+      cell(tr, dateText(item.han_su_dung), "nowrap");
+    }
+    section.querySelector("[data-total]").textContent = money(receipt.dong.reduce((sum,p)=>sum+p.gia_nhap*p.so_luong_nhap,0));
+    confirm.hidden = completed;
     section.querySelector("[data-details]").hidden = false;
   }
-  try {
-    hienPhieu(await goiApi(path));
-  } finally {
-    loading.hidden = true;
-  }
-  nutXacNhan.addEventListener("click", async () => {
-    hienLoi(null);
-    nutXacNhan.disabled = true;
+  try { show(await goiApi(path)); }
+  finally { section.querySelector("[data-loading]").hidden = true; }
+  confirm.addEventListener("click", async () => {
+    if (confirm.disabled) return;
+    hienLoi(null); confirm.disabled = true; confirm.textContent = "Đang xác nhận…";
     try {
-      hienPhieu(await goiApi(path + "/xac-nhan", { method: "POST", body: {} }));
-      feedback.textContent = "Đã xác nhận phiếu và cập nhật tồn kho.";
+      show(await goiApi(path + "/xac-nhan", {method: "POST", body: {}}));
+      feedback.textContent = "Đã xác nhận phiếu. Tồn kho đã được cập nhật.";
       feedback.hidden = false;
-    } catch (error) {
-      hienLoi(error);
-    } finally {
-      nutXacNhan.disabled = false;
-    }
+    } catch (error) { hienLoi(error); }
+    finally { confirm.disabled = false; confirm.textContent = "Xác nhận nhập kho"; }
   });
 }
 
-function danhSachLo(section) {
+async function danhSachLo(section) {
   const form = section.querySelector("form");
   const summary = section.querySelector("[data-lot-summary]");
   const tbody = section.querySelector("tbody");
-  let request;
   const params = new URLSearchParams(location.search);
-  for (const key of ["ma_lo", "ma_sp"]) form.elements[key].value = params.get(key) || "";
-  async function load() {
-    request?.abort();
-    request = new AbortController();
-    const query = new URLSearchParams();
-    for (const key of ["ma_lo", "ma_sp"]) {
-      const value = form.elements[key].value.trim();
-      if (value) query.set(key, value);
-    }
-    const suffix = query.size ? "?" + query : "";
-    history.replaceState(null, "", location.pathname + suffix);
-    hienLoi(null);
-    summary.textContent = "Đang tải lô hàng…";
+  form.elements.q.value = params.get("q") || params.get("ma_lo") || params.get("ma_sp") || "";
+  form.elements.tinh_trang.value = params.get("tinh_trang") || "";
+  const lots = await goiApi(api + "/lo-hang");
+  let page = 1;
+  let result = [];
+  const perPage = 10;
+  function render() {
     tbody.replaceChildren();
-    try {
-      const rows = await goiApi(api + "/lo-hang" + suffix, { signal: request.signal });
-      summary.textContent = rows.length ? number.format(rows.length) + " lô hàng" : "Không tìm thấy lô phù hợp.";
-      dienBang(tbody, rows.map((row) => [
-        row.ma_lo, row.ma_sp, dateText(row.ngay_nhap), dateText(row.ngay_san_xuat), dateText(row.han_su_dung),
-        number.format(row.ton_thuc_te), number.format(row.dang_giu), number.format(row.kha_dung),
-      ]));
-    } catch (error) {
-      if (error.name !== "AbortError") {
-        summary.textContent = "";
-        hienLoi(error);
+    for (const item of result.slice((page-1)*perPage, page*perPage)) {
+      const tr = tbody.insertRow();
+      const lot = cell(tr, item.ma_lo, "nowrap");
+      const entered = lot.appendChild(document.createElement("small"));
+      entered.className = "subline"; entered.textContent = "Nhập " + dateText(item.ngay_nhap);
+      const product = cell(tr, products.get(item.ma_sp)?.ten_sp || item.ma_sp);
+      const code = product.appendChild(document.createElement("small"));
+      code.className = "subline"; code.textContent = item.ma_sp;
+      cell(tr, catalog.nha_cung_cap_theo_lo?.[item.ma_lo] || "Chưa ghi nhận");
+      const expiry = cell(tr, dateText(item.han_su_dung), "nowrap");
+      if (item.ngay_san_xuat) {
+        const made = expiry.appendChild(document.createElement("small"));
+        made.className = "subline"; made.textContent = "SX " + dateText(item.ngay_san_xuat);
       }
+      cell(tr, number.format(item.ton_thuc_te), "numeric");
+      cell(tr, number.format(item.dang_giu), "numeric");
+      cell(tr, number.format(item.kha_dung), "numeric");
+      const [label, style] = lotStatus(item);
+      cell(tr, "").append(badge(label, style));
     }
+    if (!result.length) cell(tbody.insertRow(), "Không có lô hàng phù hợp.").colSpan = 8;
+    const totalPages = Math.max(1, Math.ceil(result.length / perPage));
+    section.querySelector("[data-page]").textContent = page + " / " + totalPages;
+    section.querySelector("[data-prev]").disabled = page === 1;
+    section.querySelector("[data-next]").disabled = page === totalPages;
+    summary.textContent = result.length ? (page-1)*perPage+1 + "–" + Math.min(page*perPage,result.length) + " trên " + result.length + " lô hàng" : "Không tìm thấy lô hàng";
   }
-  form.addEventListener("submit", (event) => { event.preventDefault(); load(); });
-  form.addEventListener("reset", () => setTimeout(load, 0));
-  load();
+  function filter() {
+    const term = normalize(form.elements.q.value);
+    const status = form.elements.tinh_trang.value;
+    result = lots.filter(item => {
+      const text = [item.ma_lo,item.ma_sp,products.get(item.ma_sp)?.ten_sp,catalog.nha_cung_cap_theo_lo?.[item.ma_lo]].join(" ");
+      return normalize(text).includes(term) && (!status || lotStatus(item)[2]===status);
+    });
+    page = 1;
+    const query = new URLSearchParams();
+    if (form.elements.q.value.trim()) query.set("q",form.elements.q.value.trim());
+    if (status) query.set("tinh_trang",status);
+    history.replaceState(null,"",location.pathname+(query.size ? "?"+query : ""));
+    render();
+  }
+  form.addEventListener("submit",event=>{event.preventDefault();filter();});
+  form.addEventListener("reset",()=>setTimeout(filter,0));
+  section.querySelector("[data-prev]").addEventListener("click",()=>{page--;render();});
+  section.querySelector("[data-next]").addEventListener("click",()=>{page++;render();});
+  filter();
 }
 
 async function danhSachCanhBao(section) {
   const groups = [
-    ["[data-low-list]", "ton_thap", "Không có sản phẩm dưới ngưỡng."],
-    ["[data-expiring-list]", "sap_het_han", "Không có lô sắp hết hạn."],
+    ["[data-low-list]", "ton_thap", "[data-low-count]", "Không có sản phẩm dưới ngưỡng."],
+    ["[data-expiring-list]", "sap_het_han", "[data-expiring-count]", "Không có lô sắp hết hạn."],
   ];
-  let result;
-  try {
-    result = await goiApi(api + "/canh-bao");
-  } catch (error) {
-    for (const [selector] of groups) section.querySelector(selector).replaceChildren();
-    throw error;
-  }
-  for (const [selector, key, empty] of groups) {
+  const result = await goiApi(api + "/canh-bao");
+  for (const [selector, key, count, empty] of groups) {
     const list = section.querySelector(selector);
     list.replaceChildren();
+    section.querySelector(count).textContent = result[key].length;
     if (!result[key].length) {
       const item = list.appendChild(document.createElement("li"));
-      item.textContent = empty;
-      item.className = "muted";
-      continue;
+      item.textContent = empty; item.className = "empty"; continue;
     }
     for (const warning of result[key]) {
       const item = list.appendChild(document.createElement("li"));
       const link = item.appendChild(document.createElement("a"));
-      const filter = warning.ma_lo ? { ma_lo: warning.ma_lo } : { ma_sp: warning.ma_sp };
-      link.href = "/kho/lo-hang?" + new URLSearchParams(filter);
-      link.textContent = warning.ma_lo || warning.ma_sp;
+      link.href = "/kho/lo-hang?" + new URLSearchParams(warning.ma_lo ? {ma_lo:warning.ma_lo}:{ma_sp:warning.ma_sp});
+      link.textContent = products.get(warning.ma_sp)?.ten_sp || warning.ma_sp;
       const text = item.appendChild(document.createElement("span"));
       text.textContent = warning.noi_dung + (warning.han_su_dung ? " · " + dateText(warning.han_su_dung) : "");
     }
   }
 }
 
-document.querySelector("[data-find-receipt]")?.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const maPhieu = event.currentTarget.elements.ma_phieu.value.trim();
-  if (maPhieu) location.assign(phieuPath + encodeURIComponent(maPhieu));
+function danhSachSanPham(section) {
+  const search = section.querySelector("[data-product-search]");
+  const status = section.querySelector("[data-product-status]");
+  const rows = [...section.querySelectorAll("[data-product-row]")];
+  function filter() {
+    let count = 0;
+    for (const row of rows) {
+      row.hidden = !normalize(row.dataset.search).includes(normalize(search.value))
+        || Boolean(status.value && status.value !== row.dataset.status);
+      if (!row.hidden) count++;
+    }
+    section.querySelector("[data-products-empty]").hidden = count > 0;
+    section.querySelector("[data-product-count]").textContent = count + " sản phẩm";
+  }
+  search.addEventListener("input",filter);
+  status.addEventListener("change",filter);
+  filter();
+}
+
+document.querySelector("[data-toggle-menu]")?.addEventListener("click",event=>{
+  const open = document.querySelector(".shell").classList.toggle("menu-open");
+  event.currentTarget.setAttribute("aria-expanded",String(open));
 });
+document.querySelector("[data-print]")?.addEventListener("click",()=>window.print());
 
 for (const [selector, init] of [
-  ["[data-dashboard]", dashboard], ["[data-receipt-form]", formPhieu], ["[data-receipt]", chiTietPhieu],
-  ["[data-lot-list]", danhSachLo], ["[data-alert-list]", danhSachCanhBao],
+  ["[data-dashboard]",dashboard],["[data-receipt-form]",formPhieu],
+  ["[data-receipt]",chiTietPhieu],["[data-lot-list]",danhSachLo],
+  ["[data-alert-list]",danhSachCanhBao],["[data-product-list]",danhSachSanPham],
 ]) {
   const section = document.querySelector(selector);
-  if (section) Promise.resolve().then(() => init(section)).catch(hienLoi);
+  if (section) Promise.resolve().then(()=>init(section)).catch(error=>hienLoi(error));
 }

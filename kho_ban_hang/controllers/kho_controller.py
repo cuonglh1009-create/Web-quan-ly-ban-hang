@@ -2,6 +2,7 @@ from datetime import date
 
 from ..contracts.kho_dto import BoLocLoDTO, DongNhapDTO, PhieuNhapDTO, PhieuNhapKetQuaDTO
 from ..contracts.xac_thuc_contract import IXacThuc
+from ..repositories.kho.kho_truy_van_repository import KhoTruyVanRepository
 from ..domain.enums_chung import VaiTro
 
 
@@ -14,6 +15,20 @@ class KhoController:
 
     def yeu_cau_nhan_vien_kho(self, ma_phien_web: str | None):
         return self.xac_thuc.yeu_cau_vai_tro(ma_phien_web, VaiTro.NV_KHO)
+
+    def du_lieu_giao_dien(self, ma_phien_web):
+        self.yeu_cau_nhan_vien_kho(ma_phien_web)
+        repo = KhoTruyVanRepository(self.kho.ket_noi_db)
+        return {
+            "san_pham": repo.san_pham(),
+            "nha_cung_cap": repo.nha_cung_cap(),
+            "nha_cung_cap_theo_lo": repo.nha_cung_cap_theo_lo(),
+            "so_ngay_canh_bao": self.kho.cau_hinh.so_ngay_canh_bao,
+        }
+
+    def danh_sach_phieu(self, ma_phien_web, q="", trang_thai=""):
+        self.yeu_cau_nhan_vien_kho(ma_phien_web)
+        return KhoTruyVanRepository(self.kho.ket_noi_db).phieu_nhap(q, trang_thai)
 
     def lap_phieu_nhap(self, ma_phien_web: str | None, du_lieu: PhieuNhapDTO) -> PhieuNhapKetQuaDTO:
         nhan_vien = self.yeu_cau_nhan_vien_kho(ma_phien_web)
