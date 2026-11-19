@@ -5,7 +5,7 @@ from ...contracts.san_pham_contract import ITraCuuSanPham
 from ...domain.enums_kho import LoaiSanPham, TrangThaiSanPham
 from ...domain.errors import KhongTimThayError
 from ...domain.san_pham import SanPham
-from ...services.kho.san_pham_factory import SanPhamFactory
+from ...domain.san_pham_factory import SanPhamFactory
 
 
 class SanPhamRepository(ITraCuuSanPham):

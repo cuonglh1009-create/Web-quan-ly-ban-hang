@@ -108,29 +108,29 @@ def create_app(cau_hinh: CauHinh | None = None, kho_gia=None, tra_cuu_gia=None, 
     @click.option("--mat-khau-ban-hang", prompt=True, hide_input=True, confirmation_prompt=True)
     def lenh_seed(mat_khau_kho, mat_khau_ban_hang):
         """Nạp hai tài khoản (mật khẩu nhập lúc seed, chỉ lưu bản băm) và dữ liệu mẫu Bán hàng."""
-        db = mo_ket_noi(cau_hinh.duong_dan_csdl)
-        tao_schema(db)
-        from kho_ban_hang.repositories.ban_hang.khach_hang_repository import KhachHangRepository
-        from kho_ban_hang.repositories.ban_hang.khuyen_mai_repository import KhuyenMaiRepository
-        from kho_ban_hang.repositories.ban_hang.nhan_vien_repository import NhanVienRepository
-        for mk in (mat_khau_kho, mat_khau_ban_hang):
-            if len(mk) < 8:
-                raise click.ClickException("Mật khẩu tối thiểu 8 ký tự.")
-        nv = NhanVienRepository(db)
-        nv.luu(NhanVien("NV001", "Nhân viên kho", VaiTro.NV_KHO, "nv_kho",
-                        generate_password_hash(mat_khau_kho)))
-        nv.luu(NhanVien("NV002", "Nhân viên bán hàng", VaiTro.NV_BAN_HANG, "nv_ban_hang",
-                        generate_password_hash(mat_khau_ban_hang)))
-        kh = KhachHangRepository(db)
-        kh.luu(KhachThuong("KH001", "Nguyễn Văn A", "0900000001", "Hà Nội", 0))
-        kh.luu(KhachThuong("KH002", "Trần Thị B", "0900000002", "Hà Nội", 480))
-        kh.luu(KhachVIP("KH003", "Lê Văn C", "0900000003", "Hà Nội", 900, date.today()))
-        km, hom_nay = KhuyenMaiRepository(db), date.today()
-        chung = (hom_nay, hom_nay + timedelta(days=365))
-        km.luu(KhuyenMaiPhanTram("GIAM10", "Giảm 10%", *chung, 100_000,
-                                 phan_tram_giam=Decimal("10"), giam_toi_da=50_000))
-        km.luu(KhuyenMaiTienMat("GIAM20K", "Giảm 20.000đ", *chung, 50_000, so_tien_giam=20_000))
-        db.executescript((GOC / "repositories" / "kho" / "du_lieu_mau_kho.sql").read_text(encoding="utf-8"))
+        with closing(mo_ket_noi(cau_hinh.duong_dan_csdl)) as db:
+            tao_schema(db)
+            from kho_ban_hang.repositories.ban_hang.khach_hang_repository import KhachHangRepository
+            from kho_ban_hang.repositories.ban_hang.khuyen_mai_repository import KhuyenMaiRepository
+            from kho_ban_hang.repositories.ban_hang.nhan_vien_repository import NhanVienRepository
+            for mk in (mat_khau_kho, mat_khau_ban_hang):
+                if len(mk) < 8:
+                    raise click.ClickException("Mật khẩu tối thiểu 8 ký tự.")
+            nv = NhanVienRepository(db)
+            nv.luu(NhanVien("NV001", "Nhân viên kho", VaiTro.NV_KHO, "nv_kho",
+                            generate_password_hash(mat_khau_kho)))
+            nv.luu(NhanVien("NV002", "Nhân viên bán hàng", VaiTro.NV_BAN_HANG, "nv_ban_hang",
+                            generate_password_hash(mat_khau_ban_hang)))
+            kh = KhachHangRepository(db)
+            kh.luu(KhachThuong("KH001", "Nguyễn Văn A", "0900000001", "Hà Nội", 0))
+            kh.luu(KhachThuong("KH002", "Trần Thị B", "0900000002", "Hà Nội", 480))
+            kh.luu(KhachVIP("KH003", "Lê Văn C", "0900000003", "Hà Nội", 900, date.today()))
+            km, hom_nay = KhuyenMaiRepository(db), date.today()
+            chung = (hom_nay, hom_nay + timedelta(days=365))
+            km.luu(KhuyenMaiPhanTram("GIAM10", "Giảm 10%", *chung, 100_000,
+                                     phan_tram_giam=Decimal("10"), giam_toi_da=50_000))
+            km.luu(KhuyenMaiTienMat("GIAM20K", "Giảm 20.000đ", *chung, 50_000, so_tien_giam=20_000))
+            db.executescript((GOC / "repositories" / "kho" / "du_lieu_mau_kho.sql").read_text(encoding="utf-8"))
         click.echo("Đã seed: nv_kho, nv_ban_hang, KH001-KH003, GIAM10, GIAM20K, dữ liệu mẫu Kho (SP01-SP04).")
 
     return app

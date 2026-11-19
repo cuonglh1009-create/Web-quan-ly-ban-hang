@@ -2,6 +2,7 @@
 {% block title %}Tổng quan{% endblock %}
 {% block content %}
 <header class="page-head"><div><h1>Tổng quan kho</h1><p class="muted">Theo dõi tồn kho và các lô cần xử lý.</p></div><a class="button" href="{{ url_for('kho.phieu_nhap_moi') }}"><span aria-hidden="true">+</span> Lập phiếu nhập</a></header>
+<section class="warehouse-banner"><div><h2>Sẵn sàng cho ngày làm việc mới</h2><p>Theo dõi hàng hóa từ lúc nhập kho đến khi xuất bán.</p><a href="{{ url_for('kho.lo_hang') }}">Kiểm tra lô hàng →</a></div><img src="{{ url_for('static',filename='kho/images/warehouse.webp') }}" alt="Minh họa kệ hàng trong kho" width="1200" height="800"></section>
 <p class="notice" data-error hidden role="alert"></p>
 <section class="metrics" data-dashboard aria-label="Số liệu kho">
   <a class="panel metric" href="{{ url_for('kho.lo_hang') }}"><span class="metric-label">Lô hàng trong kho <span class="metric-icon" aria-hidden="true">▦</span></span><strong data-lots>…</strong><span class="metric-foot">Xem chi tiết lô hàng <span>→</span></span></a>

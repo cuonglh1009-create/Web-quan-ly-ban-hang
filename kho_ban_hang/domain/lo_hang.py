@@ -6,7 +6,7 @@ from .errors_kho import KhongDuTonKhoError
 from .san_pham import SanPham
 
 
-@dataclass
+@dataclass(frozen=True)
 class LoHang:
     ma_lo: str
     san_pham: SanPham
@@ -15,6 +15,12 @@ class LoHang:
     han_su_dung: date | None
     so_luong_con_lai: int
     gia_nhap: int
+
+    def __post_init__(self):
+        if type(self.so_luong_con_lai) is not int or self.so_luong_con_lai < 0:
+            raise DuLieuKhongHopLeError("Tồn kho phải là số nguyên không âm.")
+        if type(self.gia_nhap) is not int or self.gia_nhap <= 0:
+            raise DuLieuKhongHopLeError("Giá nhập phải là số nguyên dương.")
 
     def con_han_su_dung(self, ngay: date) -> bool:
         return self.han_su_dung is None or ngay <= self.han_su_dung
@@ -29,7 +35,7 @@ class LoHang:
             raise DuLieuKhongHopLeError("Lượng xuất phải là số nguyên dương.")
         if so_luong > self.so_luong_con_lai:
             raise KhongDuTonKhoError(f"Lô {self.ma_lo} thiếu tồn thực tế.")
-        self.so_luong_con_lai -= so_luong
+        object.__setattr__(self, "so_luong_con_lai", self.so_luong_con_lai - so_luong)
 
 
 @dataclass(frozen=True)

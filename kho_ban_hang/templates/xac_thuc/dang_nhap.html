@@ -1,37 +1,40 @@
-{% extends "base.html" %}
-{% block title %}Đăng nhập{% endblock %}
-{% block content %}
-<section class="hop hop-hep auth-card">
-  <div class="auth-header">
-    <span class="brand-mark" aria-hidden="true">K&amp;B</span>
-    <h1>Đăng nhập</h1>
-    <p class="muted">Hệ thống Kho &amp; Bán hàng</p>
-  </div>
-  <form id="form-dang-nhap" novalidate>
-    <label>Tên đăng nhập <input name="ten_dang_nhap" autocomplete="username" placeholder="Nhập tên đăng nhập" required></label>
-    <p id="loi" class="loi" role="alert" hidden></p>
-    <div style="margin-top: .75rem;">
-      <button type="submit" class="button-block">Đăng nhập</button>
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Đăng nhập · Kho &amp; Bán hàng</title>
+  <link rel="stylesheet" href="{{ url_for('static',filename='xac_thuc/dang_nhap.css') }}">
+  <script src="{{ url_for('static',filename='chung/phien.js') }}" defer></script>
+  <script src="{{ url_for('static',filename='xac_thuc/dang_nhap.js') }}" defer></script>
+</head>
+<body>
+<main class="login-shell">
+  <section class="login-visual" aria-label="Hệ thống Kho và Bán hàng">
+    <a class="wordmark" href="/"><span class="brand-mark">K</span><span>Kho &amp; Bán hàng</span></a>
+    <div class="visual-copy"><h1>Mọi hàng hóa.<br>Đều trong tầm quản lý.</h1><p>Theo dõi từng lô hàng, quản lý tồn kho và xử lý bán hàng trong một không gian làm việc.</p></div>
+    <img class="warehouse-art" src="{{ url_for('static',filename='kho/images/warehouse.webp') }}" alt="Minh họa không gian kho với kệ hàng và kiện hàng được sắp xếp ngăn nắp" width="1200" height="800" fetchpriority="high">
+    <div class="visual-caption"><span class="caption-dot"></span>Nhập hàng · Theo dõi tồn · Bán hàng</div>
+  </section>
+  <section class="login-form-section">
+    <div class="form-container">
+      <span class="eyebrow">KHÔNG GIAN LÀM VIỆC</span>
+      <h2>Chào mừng trở lại</h2>
+      <p class="intro">Đăng nhập để tiếp tục công việc của bạn.</p>
+      <form id="form-dang-nhap">
+        <label for="ten-dang-nhap">Tên đăng nhập</label>
+        <input id="ten-dang-nhap" name="ten_dang_nhap" autocomplete="username" placeholder="Nhập tên đăng nhập" maxlength="64" required>
+        <label for="mat-khau">Mật khẩu</label>
+        <div class="password-field"><input id="mat-khau" name="mat_khau" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required><button type="button" class="password-toggle" aria-label="Hiện mật khẩu" aria-controls="mat-khau" aria-pressed="false">Hiện</button></div>
+        <p id="loi" class="error" role="alert" hidden></p>
+        <button class="submit" type="submit" disabled><span>Đang kết nối…</span><span aria-hidden="true">→</span></button>
+        <button type="button" class="retry" id="thu-lai" hidden>Thử kết nối lại</button>
+      </form>
+      <p class="access-note">Sử dụng tài khoản được cấp cho nhân viên Kho hoặc Bán hàng.</p>
     </div>
-  </form>
-</section>
-{% endblock %}
-{% block js %}
-<script>
-  Api.khoiTao({}).then(() => {
-    const form = document.getElementById("form-dang-nhap"), loi = document.getElementById("loi");
-    form.addEventListener("submit", async (ev) => {
-      ev.preventDefault();
-      loi.hidden = true;
-      try {
-        const kq = await Api.post("/api/xac-thuc/dang-nhap", {
-          ten_dang_nhap: form.ten_dang_nhap.value
-        });
-        location.href = kq.trang_chu;           // trình duyệt mở đúng trang theo vai trò
-      } catch (e) {
-        loi.textContent = e.thong_bao; loi.hidden = false;
-      }
-    });
-  });
-</script>
-{% endblock %}
+    <footer>Kho &amp; Bán hàng<span>Quản lý công việc mỗi ngày</span></footer>
+  </section>
+</main>
+</body>
+</html>

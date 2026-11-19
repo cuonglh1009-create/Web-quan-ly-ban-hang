@@ -21,22 +21,23 @@ class PhieuNhapRepository:
         row = self.ket_noi_db.execute("SELECT * FROM phieu_nhap WHERE ma_phieu = ?", (ma_phieu,)).fetchone()
         if row is None:
             raise KhongTimThayError(f"Không tìm thấy phiếu {ma_phieu}.", "ma_phieu")
-        phieu = PhieuNhapKho(
-            row["ma_phieu"], date.fromisoformat(row["ngay_nhap"]), self.tim_nhan_vien(row["ma_nv"]),
-            self.nha_cung_cap_repo.tim_theo_ma(row["ma_ncc"]), TrangThaiPhieuNhap(row["trang_thai"]),
-        )
+        ngay_nhap = date.fromisoformat(row["ngay_nhap"])
+        chi_tiet = []
         for dong in self.ket_noi_db.execute(
             "SELECT * FROM chi_tiet_phieu_nhap WHERE ma_phieu = ? ORDER BY stt", (ma_phieu,)
         ):
             sp = self.san_pham_repo.tim_theo_ma(dong["ma_sp"])
             lo = LoHang(
-                dong["ma_lo"], sp, phieu.ngay_nhap,
+                dong["ma_lo"], sp, ngay_nhap,
                 date.fromisoformat(dong["ngay_san_xuat"]) if dong["ngay_san_xuat"] else None,
                 date.fromisoformat(dong["han_su_dung"]) if dong["han_su_dung"] else None,
                 dong["so_luong_nhap"], dong["gia_nhap"],
             )
-            phieu.chi_tiet.append(ChiTietPhieuNhap(sp, dong["so_luong_nhap"], dong["gia_nhap"], lo))
-        return phieu
+            chi_tiet.append(ChiTietPhieuNhap(sp, dong["so_luong_nhap"], dong["gia_nhap"], lo))
+        return PhieuNhapKho(
+            ma_phieu, ngay_nhap, self.tim_nhan_vien(row['ma_nv']),
+            self.nha_cung_cap_repo.tim_theo_ma(row['ma_ncc']), row['trang_thai'], chi_tiet,
+        )
 
     def luu(self, phieu: PhieuNhapKho) -> None:
         self.ket_noi_db.execute(

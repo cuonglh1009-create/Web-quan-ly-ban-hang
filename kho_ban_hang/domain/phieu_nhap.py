@@ -1,7 +1,7 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 
-from .enums_kho import LoaiSanPham, TrangThaiPhieuNhap
+from .enums_kho import TrangThaiPhieuNhap
 from .errors import DuLieuKhongHopLeError, TrangThaiKhongHopLeError
 from .lo_hang import LoHang
 from .nha_cung_cap import NhaCungCap
@@ -9,7 +9,7 @@ from .nhan_vien import NhanVien
 from .san_pham import SanPham
 
 
-@dataclass
+@dataclass(frozen=True)
 class ChiTietPhieuNhap:
     san_pham: SanPham
     so_luong_nhap: int
@@ -21,7 +21,7 @@ class ChiTietPhieuNhap:
         for ten, gia_tri in (("so_luong_nhap", self.so_luong_nhap), ("gia_nhap", self.gia_nhap)):
             if type(gia_tri) is not int or gia_tri <= 0:
                 raise DuLieuKhongHopLeError("Phải là số nguyên dương.", tien_to + ten)
-        if self.san_pham.loai == LoaiSanPham.THUC_PHAM:
+        if self.san_pham.can_ngay_lo:
             for ten in ("ngay_san_xuat", "han_su_dung"):
                 if getattr(lo, ten) is None:
                     raise DuLieuKhongHopLeError("Thực phẩm cần khai báo ngày này.", tien_to + ten)
@@ -31,20 +31,31 @@ class ChiTietPhieuNhap:
             raise DuLieuKhongHopLeError("Hạn sử dụng phải từ ngày nhập trở đi.", tien_to + "han_su_dung")
 
 
-@dataclass
 class PhieuNhapKho:
-    ma_phieu: str
-    ngay_nhap: date
-    nguoi_lap: NhanVien
-    nha_cung_cap: NhaCungCap
-    trang_thai: TrangThaiPhieuNhap = TrangThaiPhieuNhap.NHAP
-    chi_tiet: list[ChiTietPhieuNhap] = field(default_factory=list)
+    def __init__(
+        self, ma_phieu: str, ngay_nhap: date, nguoi_lap: NhanVien,
+        nha_cung_cap: NhaCungCap, trang_thai=TrangThaiPhieuNhap.NHAP, chi_tiet=(),
+    ):
+        self.ma_phieu = ma_phieu
+        self.ngay_nhap = ngay_nhap
+        self.nguoi_lap = nguoi_lap
+        self.nha_cung_cap = nha_cung_cap
+        self._trang_thai = TrangThaiPhieuNhap(trang_thai)
+        self._chi_tiet = list(chi_tiet)
+
+    @property
+    def trang_thai(self) -> TrangThaiPhieuNhap:
+        return self._trang_thai
+
+    @property
+    def chi_tiet(self) -> tuple[ChiTietPhieuNhap, ...]:
+        return tuple(self._chi_tiet)
 
     def them_chi_tiet(self, chi_tiet: ChiTietPhieuNhap) -> None:
         if self.trang_thai != TrangThaiPhieuNhap.NHAP:
             raise TrangThaiKhongHopLeError("Chỉ có thể thêm dòng vào phiếu nháp.")
         chi_tiet.kiem_tra_hop_le(self.ngay_nhap, f"dong[{len(self.chi_tiet)}].")
-        self.chi_tiet.append(chi_tiet)
+        self._chi_tiet.append(chi_tiet)
 
     def kiem_tra_truoc_xac_nhan(self, ngay_xac_nhan: date) -> None:
         if self.ngay_nhap > ngay_xac_nhan:
@@ -60,5 +71,5 @@ class PhieuNhapKho:
         if self.trang_thai == TrangThaiPhieuNhap.DA_XAC_NHAN:
             return []
         self.kiem_tra_truoc_xac_nhan(ngay_xac_nhan)
-        self.trang_thai = TrangThaiPhieuNhap.DA_XAC_NHAN
+        self._trang_thai = TrangThaiPhieuNhap.DA_XAC_NHAN
         return [chi_tiet.lo_hang for chi_tiet in self.chi_tiet]
