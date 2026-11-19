@@ -168,6 +168,26 @@ class KiemThuNangCapOOP(unittest.TestCase):
         self.assertEqual(res_tk_sp.json["du_lieu"][0]["ma_sp"], "SP02")
         self.assertEqual(res_tk_sp.json["du_lieu"][0]["tong_so_luong"], 2)
 
+        # 11. Kiểm tra liên kết dữ liệu với NV_KHO: khi Kho cập nhật, Bán hàng cũng cập nhật ngay
+        csrf_kho = self.client.get("/api/xac-thuc/phien").json["du_lieu"]["csrf_token"]
+        with closing(ket_noi(self.database)) as conn:
+            from kho_ban_hang.repositories.ban_hang.nhan_vien_repository import NhanVienRepository
+            from kho_ban_hang.services.kho.dang_ky import dang_ky_kho
+            from kho_ban_hang.contracts.kho_dto import DongNhapDTO, PhieuNhapDTO
+            parts = dang_ky_kho(conn, CauHinh(self.database), NhanVienRepository(conn).tim_theo_ma)
+            phieu = parts.nhap_kho.lap_phieu(
+                PhieuNhapDTO("NCC01", date.today(), [DongNhapDTO("SP02", "LO-SYNC-TEST", 10, 150_000)]),
+                NhanVienRepository(conn).tim_theo_ma("NV001"),
+            )
+            parts.nhap_kho.xac_nhan_phieu(phieu.ma_phieu, date.today())
+
+        # Kiểm tra Bán hàng thấy ngay số lượng và nhà cung cấp mới từ kho
+        res_sp_moi = self.client.get("/api/ban-hang/san-pham-goi-y")
+        self.assertEqual(res_sp_moi.status_code, 200)
+        sp02_moi = next(s for s in res_sp_moi.json["du_lieu"] if s["ma_sp"] == "SP02")
+        self.assertTrue(sp02_moi["so_kha_dung"] >= 10)
+        self.assertEqual(sp02_moi["nha_cung_cap"], "Nhà cung cấp An Phú")
+
 
 if __name__ == "__main__":
     unittest.main()

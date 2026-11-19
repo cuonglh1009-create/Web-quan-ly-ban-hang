@@ -7,18 +7,29 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
         maDonEl = document.getElementById("ma-don-du-kien"),
         maKhTuDongEl = document.getElementById("ma-kh-tu-dong"),
         tenNhanVienEl = document.getElementById("ten-nhan-vien"),
-        timKhachCuInput = document.getElementById("tim-khach-cu"),
-        dsKhDatalist = document.getElementById("danh-sach-kh-goi-y"),
+        chonKhachCuSelect = document.getElementById("chon-khach-cu"),
         thongTinKhEl = document.getElementById("thong-tin-kh-da-chon"),
         tenKhHienThi = document.getElementById("ten-kh-hien-thi"),
         maKhHienThi = document.getElementById("ma-kh-hien-thi"),
         sdtKhHienThi = document.getElementById("sdt-kh-hien-thi"),
         hangKhHienThi = document.getElementById("hang-kh-hien-thi"),
         nutBoChonKh = document.getElementById("nut-bo-chon-kh"),
-        chonSpInput = document.getElementById("chon-sp-nhanh"),
+        chonSpSelect = document.getElementById("chon-sp-nhanh"),
         soLuongInput = document.getElementById("so-luong-nhanh"),
+        nutGiamSl = document.getElementById("nut-giam-sl"),
+        nutTangSl = document.getElementById("nut-tang-sl"),
         nutThemSp = document.getElementById("nut-them-san-pham"),
-        dsSpDatalist = document.getElementById("danh-sach-sp-goi-y"),
+        nutLamMoiKho = document.getElementById("nut-lam-moi-kho"),
+        thoiGianDongBo = document.getElementById("thoi-gian-dong-bo"),
+        chiTietSpChon = document.getElementById("chi-tiet-sp-chon"),
+        ctTenSp = document.getElementById("ct-ten-sp"),
+        ctMaSp = document.getElementById("ct-ma-sp"),
+        ctDvt = document.getElementById("ct-dvt"),
+        ctDonGia = document.getElementById("ct-don-gia"),
+        ctTonKho = document.getElementById("ct-ton-kho"),
+        ctBadgeTon = document.getElementById("ct-badge-ton"),
+        ctNcc = document.getElementById("ct-ncc"),
+        danhMucNhanhEl = document.getElementById("danh-muc-nhanh"),
         tamTinhEl = document.getElementById("hien-thi-tam-tinh"),
         giamVipEl = document.getElementById("hien-thi-giam-vip"),
         hangChietKhauVip = document.getElementById("hang-chiet-khau-vip"),
@@ -28,56 +39,118 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
     tenNhanVienEl.value = phien.nguoi_dung.ho_ten;
   }
 
-  // Danh mục sản phẩm & khách hàng tải từ hệ thống
+  // Dữ liệu đồng bộ trực tiếp từ phân hệ kho & bán hàng
   let khoSanPhams = [];
   let danhSachKhach = [];
   let khachChon = null;
-  const cacDongHang = []; // { ma_sp, ten_sp, don_vi_tinh, don_gia, so_luong, so_kha_dung }
+  const cacDongHang = []; // { ma_sp, ten_sp, don_vi_tinh, don_gia, so_luong, so_kha_dung, nha_cung_cap }
 
-  // 1. Tải thông tin khởi tạo: mã đơn, mã khách, gợi ý sản phẩm và khách hàng
-  try {
-    const [maData, spData, khData] = await Promise.all([
-      Api.get("/api/ban-hang/ma-khoi-tao"),
-      Api.get("/api/ban-hang/san-pham-goi-y"),
-      Api.get("/api/ban-hang/khach-hang")
-    ]);
-
-    if (maData) {
-      maDonEl.value = maData.ma_don_du_kien || "";
-      maKhTuDongEl.value = maData.ma_kh_du_kien || "";
-    }
-
-    if (Array.isArray(spData)) {
-      khoSanPhams = spData;
-      dsSpDatalist.replaceChildren();
-      for (const sp of spData) {
-        const opt = document.createElement("option");
-        opt.value = sp.ma_sp;
-        opt.label = `${sp.ma_sp} - ${sp.ten_sp} (Đơn giá: ${Api.tien(sp.gia_niem_yet)} | Tồn kho: ${sp.so_kha_dung} ${sp.don_vi_tinh})`;
-        dsSpDatalist.append(opt);
+  // 1. Tải và đồng bộ dữ liệu kho & khách hàng
+  async function dongBoDuLieuKho(thongBao = false) {
+    try {
+      if (thoiGianDongBo) thoiGianDongBo.textContent = "Đang đồng bộ từ kho...";
+      const spData = await Api.get("/api/ban-hang/san-pham-goi-y");
+      if (Array.isArray(spData)) {
+        khoSanPhams = spData;
+        capNhatDropdownSanPham(spData);
+        capNhatDanhMucNhanh(spData);
       }
+      const now = new Date();
+      const gio = String(now.getHours()).padStart(2, "0") + ":" +
+                  String(now.getMinutes()).padStart(2, "0") + ":" +
+                  String(now.getSeconds()).padStart(2, "0");
+      if (thoiGianDongBo) thoiGianDongBo.textContent = `Đồng bộ lúc ${gio}`;
+      if (thongBao) {
+        loi.hidden = true;
+      }
+    } catch (err) {
+      console.error("Lỗi đồng bộ kho:", err);
+      if (thoiGianDongBo) thoiGianDongBo.textContent = "Lỗi đồng bộ kho";
     }
-
-    if (Array.isArray(khData)) {
-      danhSachKhach = khData;
-      capNhatGoiYKhachHang(khData);
-    }
-  } catch (err) {
-    console.error("Lỗi khởi tạo dữ liệu đơn mới:", err);
   }
 
-  function capNhatGoiYKhachHang(danhSach) {
-    dsKhDatalist.replaceChildren();
+  async function khoiTao() {
+    try {
+      const [maData, khData] = await Promise.all([
+        Api.get("/api/ban-hang/ma-khoi-tao"),
+        Api.get("/api/ban-hang/khach-hang")
+      ]);
+
+      if (maData) {
+        maDonEl.value = maData.ma_don_du_kien || "";
+        maKhTuDongEl.value = maData.ma_kh_du_kien || "";
+      }
+
+      if (Array.isArray(khData)) {
+        danhSachKhach = khData;
+        capNhatDropdownKhachHang(khData);
+      }
+
+      await dongBoDuLieuKho();
+
+      // Kiểm tra nếu có sản phẩm được chọn từ trang Tra cứu kho
+      const maSpLuu = sessionStorage.getItem("chon_san_pham_ma");
+      if (maSpLuu) {
+        sessionStorage.removeItem("chon_san_pham_ma");
+        chonSpSelect.value = maSpLuu;
+        hienThiChiTietSanPhamChon(maSpLuu);
+      }
+    } catch (err) {
+      console.error("Lỗi khởi tạo:", err);
+    }
+  }
+
+  nutLamMoiKho.onclick = () => dongBoDuLieuKho(true);
+
+  // 2. Cập nhật giao diện chọn khách hàng dạng <select> (không phải điền)
+  function capNhatDropdownKhachHang(danhSach) {
+    chonKhachCuSelect.replaceChildren();
+    const optMacDinh = document.createElement("option");
+    optMacDinh.value = "";
+    optMacDinh.textContent = "-- Bấm vào đây để chọn khách hàng --";
+    chonKhachCuSelect.append(optMacDinh);
+
     for (const kh of danhSach) {
       const opt = document.createElement("option");
       opt.value = kh.ma_kh;
-      const vipText = kh.hang === "VIP" ? " [VIP - Giảm 10%]" : "";
-      opt.label = `${kh.ho_ten} (${kh.so_dien_thoai || "Không có SĐT"})${vipText}`;
-      dsKhDatalist.append(opt);
+      const vipText = kh.hang === "VIP" ? " ⭐ [VIP - Giảm 10%]" : "";
+      opt.textContent = `${kh.ma_kh} - ${kh.ho_ten} (${kh.so_dien_thoai || "Không có SĐT"})${vipText}`;
+      chonKhachCuSelect.append(opt);
     }
   }
 
-  // 2. Xử lý chuyển đổi loại khách hàng (Cũ / Mới / Vãng lai)
+  chonKhachCuSelect.onchange = () => {
+    const ma = chonKhachCuSelect.value;
+    if (!ma) {
+      boChonKhach();
+      return;
+    }
+    const found = danhSachKhach.find((k) => k.ma_kh === ma);
+    if (found) chonKhach(found);
+  };
+
+  function chonKhach(kh) {
+    khachChon = kh;
+    chonKhachCuSelect.value = kh.ma_kh;
+    tenKhHienThi.textContent = kh.ho_ten;
+    maKhHienThi.textContent = kh.ma_kh;
+    sdtKhHienThi.textContent = kh.so_dien_thoai || "(Chưa có)";
+    hangKhHienThi.textContent = kh.hang === "VIP" ? "VIP ⭐ (Giảm 10%)" : "THƯỜNG";
+    hangKhHienThi.className = "badge " + (kh.hang === "VIP" ? "success" : "");
+    thongTinKhEl.hidden = false;
+    tinhTien();
+  }
+
+  function boChonKhach() {
+    khachChon = null;
+    chonKhachCuSelect.value = "";
+    thongTinKhEl.hidden = true;
+    tinhTien();
+  }
+
+  nutBoChonKh.onclick = boChonKhach;
+
+  // Xử lý radio chuyển loại khách
   const radioLoaiKhach = form.querySelectorAll("input[name=loai_khach]");
   const khoiKhachCu = document.getElementById("khoi-khach-cu");
   const khoiKhachMoi = document.getElementById("khoi-khach-moi");
@@ -101,61 +174,118 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
     });
   });
 
-  // Chọn khách hàng cũ từ gợi ý
-  timKhachCuInput.addEventListener("input", () => {
-    const val = timKhachCuInput.value.trim().toUpperCase();
-    const found = danhSachKhach.find(
-      (k) => k.ma_kh.toUpperCase() === val || k.so_dien_thoai === val || k.ho_ten.toUpperCase() === val
-    );
-    if (found) {
-      chonKhach(found);
-    }
-  });
+  // 3. Cập nhật giao diện chọn sản phẩm dạng <select> (CHỌN TRỰC TIẾP, KHÔNG PHẢI ĐIỀN)
+  function capNhatDropdownSanPham(danhSach) {
+    const giaTriHienTai = chonSpSelect.value;
+    chonSpSelect.replaceChildren();
 
-  function chonKhach(kh) {
-    khachChon = kh;
-    tenKhHienThi.textContent = kh.ho_ten;
-    maKhHienThi.textContent = kh.ma_kh;
-    sdtKhHienThi.textContent = kh.so_dien_thoai || "(Chưa có)";
-    hangKhHienThi.textContent = kh.hang === "VIP" ? "VIP (Giảm 10%)" : "THƯỜNG";
-    hangKhHienThi.className = "badge " + (kh.hang === "VIP" ? "success" : "");
-    thongTinKhEl.hidden = false;
-    timKhachCuInput.value = `${kh.ho_ten} (${kh.ma_kh})`;
-    tinhTien();
+    const optMacDinh = document.createElement("option");
+    optMacDinh.value = "";
+    optMacDinh.textContent = "-- Bấm vào đây để chọn sản phẩm từ kho --";
+    chonSpSelect.append(optMacDinh);
+
+    for (const sp of danhSach) {
+      const opt = document.createElement("option");
+      opt.value = sp.ma_sp;
+      const tonText = sp.so_kha_dung > 0 ? `Tồn kho: ${sp.so_kha_dung} ${sp.don_vi_tinh}` : "HẾT HÀNG";
+      opt.textContent = `${sp.ma_sp} - ${sp.ten_sp} | Đơn giá: ${Api.tien(sp.gia_niem_yet)} | ${tonText} (NCC: ${sp.nha_cung_cap || "Kho"})`;
+      chonSpSelect.append(opt);
+    }
+
+    if (giaTriHienTai && danhSach.some((p) => p.ma_sp === giaTriHienTai)) {
+      chonSpSelect.value = giaTriHienTai;
+      hienThiChiTietSanPhamChon(giaTriHienTai);
+    } else {
+      chiTietSpChon.hidden = true;
+    }
   }
 
-  function boChonKhach() {
-    khachChon = null;
-    thongTinKhEl.hidden = true;
-    timKhachCuInput.value = "";
-    tinhTien();
+  // Danh mục chọn nhanh trực tiếp (Quick Pick Catalog)
+  function capNhatDanhMucNhanh(danhSach) {
+    danhMucNhanhEl.replaceChildren();
+    for (const sp of danhSach) {
+      const card = document.createElement("div");
+      card.style.cssText = "background: #fff; border: 1px solid var(--line); border-radius: .45rem; padding: .65rem .8rem; display: flex; flex-direction: column; justify-content: space-between; gap: .3rem; transition: border-color .15s;";
+
+      const hetHang = sp.so_kha_dung <= 0;
+      card.innerHTML = `
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: .3rem;">
+            <strong style="font-size: .92rem; color: var(--ink);">${sp.ten_sp}</strong>
+            <span class="badge ${hetHang ? "danger" : (sp.so_kha_dung <= 5 ? "warning" : "success")}" style="font-size: .75rem; white-space: nowrap;">
+              ${hetHang ? "Hết" : "Tồn " + sp.so_kha_dung}
+            </span>
+          </div>
+          <div style="font-size: .88rem; font-weight: 750; color: var(--accent); margin-top: .15rem;">${Api.tien(sp.gia_niem_yet)} <span style="font-size: .75rem; font-weight: 400; color: var(--muted);">/ ${sp.don_vi_tinh}</span></div>
+          <div style="font-size: .78rem; color: var(--muted); margin-top: .2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">NCC: ${sp.nha_cung_cap || "An Phú"}</div>
+        </div>
+      `;
+
+      const btnChon = document.createElement("button");
+      btnChon.type = "button";
+      btnChon.className = "secondary";
+      btnChon.style.cssText = "margin-top: .45rem; padding: .3rem .5rem; font-size: .82rem; width: 100%; font-weight: 600;";
+      btnChon.textContent = "+ Chọn vào đơn";
+      btnChon.disabled = hetHang;
+      btnChon.onclick = () => {
+        chonSpSelect.value = sp.ma_sp;
+        hienThiChiTietSanPhamChon(sp.ma_sp);
+        themSanPhamVaoDon(sp, 1);
+      };
+
+      card.append(btnChon);
+      danhMucNhanhEl.append(card);
+    }
   }
 
-  nutBoChonKh.onclick = boChonKhach;
-
-  // 3. Thêm sản phẩm vào đơn từ gợi ý của kho (BỎ NÚT THÊM DÒNG THỦ CÔNG)
-  nutThemSp.onclick = () => {
-    xoaLoi();
-    const ma = chonSpInput.value.trim().toUpperCase();
-    const sl = parseInt(soLuongInput.value, 10);
-
-    if (!ma) {
-      chonSpInput.focus();
-      return;
-    }
-    if (!sl || sl <= 0) {
-      soLuongInput.focus();
-      return;
-    }
-
-    const sp = khoSanPhams.find((p) => p.ma_sp.toUpperCase() === ma);
+  function hienThiChiTietSanPhamChon(maSp) {
+    const sp = khoSanPhams.find((p) => p.ma_sp === maSp);
     if (!sp) {
-      loi.textContent = `Không tìm thấy mã sản phẩm "${ma}" trong kho. Vui lòng chọn từ danh sách gợi ý.`;
-      loi.hidden = false;
+      chiTietSpChon.hidden = true;
       return;
     }
+    ctTenSp.textContent = sp.ten_sp;
+    ctMaSp.textContent = sp.ma_sp;
+    ctDvt.textContent = sp.don_vi_tinh;
+    ctDonGia.textContent = Api.tien(sp.gia_niem_yet);
+    ctTonKho.textContent = `${sp.so_kha_dung} ${sp.don_vi_tinh}`;
+    ctNcc.textContent = sp.nha_cung_cap || "Nhà cung cấp An Phú";
 
-    // Kiểm tra đã có trong danh sách chưa
+    if (sp.so_kha_dung <= 0) {
+      ctBadgeTon.textContent = "HẾT HÀNG";
+      ctBadgeTon.className = "badge danger";
+    } else if (sp.so_kha_dung <= 5) {
+      ctBadgeTon.textContent = "Sắp hết hàng";
+      ctBadgeTon.className = "badge warning";
+    } else {
+      ctBadgeTon.textContent = "Còn hàng";
+      ctBadgeTon.className = "badge success";
+    }
+    chiTietSpChon.hidden = false;
+  }
+
+  chonSpSelect.onchange = () => {
+    const ma = chonSpSelect.value;
+    if (ma) hienThiChiTietSanPhamChon(ma);
+    else chiTietSpChon.hidden = true;
+  };
+
+  // Nút tăng giảm số lượng tiện lợi
+  nutGiamSl.onclick = () => {
+    let sl = parseInt(soLuongInput.value, 10) || 1;
+    if (sl > 1) soLuongInput.value = sl - 1;
+  };
+  nutTangSl.onclick = () => {
+    let sl = parseInt(soLuongInput.value, 10) || 1;
+    soLuongInput.value = sl + 1;
+  };
+
+  function themSanPhamVaoDon(sp, sl) {
+    xoaLoi();
+    if (!sp) return;
+    if (!sl || sl <= 0) sl = 1;
+
+    // Kiểm tra hàng đã có trong đơn chưa
     const daCo = cacDongHang.find((d) => d.ma_sp === sp.ma_sp);
     if (daCo) {
       daCo.so_luong += sl;
@@ -166,16 +296,31 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
         don_vi_tinh: sp.don_vi_tinh,
         don_gia: sp.gia_niem_yet,
         so_luong: sl,
-        so_kha_dung: sp.so_kha_dung
+        so_kha_dung: sp.so_kha_dung,
+        nha_cung_cap: sp.nha_cung_cap
       });
     }
 
-    chonSpInput.value = "";
-    soLuongInput.value = "1";
-    chonSpInput.focus();
     capNhatBang();
+  }
+
+  nutThemSp.onclick = () => {
+    const ma = chonSpSelect.value;
+    const sl = parseInt(soLuongInput.value, 10) || 1;
+    if (!ma) {
+      loi.textContent = "Vui lòng bấm chọn một sản phẩm từ danh sách.";
+      loi.hidden = false;
+      chonSpSelect.focus();
+      return;
+    }
+    const sp = khoSanPhams.find((p) => p.ma_sp === ma);
+    if (sp) {
+      themSanPhamVaoDon(sp, sl);
+      soLuongInput.value = "1";
+    }
   };
 
+  // 4. Render bảng danh sách sản phẩm trong đơn
   function capNhatBang() {
     tbody.replaceChildren();
     if (cacDongHang.length === 0) {
@@ -195,27 +340,43 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
 
       // Tên SP
       const tdTen = document.createElement("td");
-      tdTen.textContent = dong.ten_sp;
+      tdTen.innerHTML = `<strong>${dong.ten_sp}</strong>`;
 
       // ĐVT
       const tdDvt = document.createElement("td");
       tdDvt.textContent = dong.don_vi_tinh;
 
-      // Đơn giá
+      // Đơn giá kho
       const tdGia = document.createElement("td");
       tdGia.className = "so";
       tdGia.textContent = Api.tien(dong.don_gia);
 
-      // Số lượng (ô input để người dùng chỉnh sửa)
+      // Số lượng
       const tdSl = document.createElement("td");
       tdSl.className = "so";
+      const wrapSl = document.createElement("div");
+      wrapSl.style.cssText = "display: flex; align-items: center; justify-content: flex-end; gap: .2rem;";
+
+      const btnM = document.createElement("button");
+      btnM.type = "button";
+      btnM.className = "secondary";
+      btnM.style.padding = ".2rem .5rem";
+      btnM.textContent = "-";
+      btnM.onclick = () => {
+        if (dong.so_luong > 1) {
+          dong.so_luong--;
+          inpSl.value = dong.so_luong;
+          tdThanhTien.textContent = Api.tien(dong.don_gia * dong.so_luong);
+          tinhTien();
+        }
+      };
+
       const inpSl = document.createElement("input");
       inpSl.type = "number";
       inpSl.min = "1";
       inpSl.step = "1";
       inpSl.value = dong.so_luong;
-      inpSl.style.maxWidth = "90px";
-      inpSl.style.textAlign = "right";
+      inpSl.style.cssText = "width: 60px; text-align: center; margin: 0; min-height: 2rem; padding: .2rem;";
       inpSl.onchange = () => {
         const moi = parseInt(inpSl.value, 10);
         if (moi > 0) {
@@ -226,7 +387,21 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
           inpSl.value = dong.so_luong;
         }
       };
-      tdSl.append(inpSl);
+
+      const btnP = document.createElement("button");
+      btnP.type = "button";
+      btnP.className = "secondary";
+      btnP.style.padding = ".2rem .5rem";
+      btnP.textContent = "+";
+      btnP.onclick = () => {
+        dong.so_luong++;
+        inpSl.value = dong.so_luong;
+        tdThanhTien.textContent = Api.tien(dong.don_gia * dong.so_luong);
+        tinhTien();
+      };
+
+      wrapSl.append(btnM, inpSl, btnP);
+      tdSl.append(wrapSl);
 
       // Thành tiền
       const tdThanhTien = document.createElement("td");
@@ -240,7 +415,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
       btnXoa.type = "button";
       btnXoa.className = "nguy-hiem";
       btnXoa.textContent = "×";
-      btnXoa.title = "Xóa sản phẩm này";
+      btnXoa.title = "Xóa mặt hàng này khỏi đơn";
       btnXoa.onclick = () => {
         cacDongHang.splice(index, 1);
         capNhatBang();
@@ -254,7 +429,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
     tinhTien();
   }
 
-  // 4. Tính toán tiền và chiết khấu VIP 10%
+  // 5. Tính toán tiền và chiết khấu VIP 10%
   function tinhTien() {
     const tamTinh = cacDongHang.reduce((sum, d) => sum + d.don_gia * d.so_luong, 0);
     tamTinhEl.textContent = Api.tien(tamTinh);
@@ -262,7 +437,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
     let giamVip = 0;
     const laVip = khachChon && khachChon.hang === "VIP";
     if (laVip && tamTinh > 0) {
-      giamVip = Math.floor(tamTinh * 0.10); // Giảm 10% cho khách VIP
+      giamVip = Math.floor(tamTinh * 0.10);
       hangChietKhauVip.hidden = false;
       giamVipEl.textContent = "- " + Api.tien(giamVip);
     } else {
@@ -276,27 +451,27 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
   function xoaLoi() {
     loi.hidden = true;
     form.querySelectorAll(".loi-truong").forEach((e) => (e.textContent = ""));
-    form.querySelectorAll("input.sai").forEach((i) => i.classList.remove("sai"));
+    form.querySelectorAll("input.sai, select.sai").forEach((i) => i.classList.remove("sai"));
   }
 
   function hienLoi(e) {
     if (e.truong && form.querySelector(`[data-loi-truong="${e.truong}"]`)) {
       form.querySelector(`[data-loi-truong="${e.truong}"]`).textContent = e.thong_bao;
     } else {
-      loi.textContent = e.thong_bao || "Có lỗi xảy ra khi lập đơn";
+      loi.textContent = e.thong_bao || "Có lỗi xảy ra khi lập đơn hàng";
       loi.hidden = false;
     }
   }
 
-  // 5. Gửi lập đơn hàng
+  // 6. Gửi lập đơn
   form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     xoaLoi();
 
     if (cacDongHang.length === 0) {
-      loi.textContent = "Đơn hàng phải có ít nhất một sản phẩm từ kho.";
+      loi.textContent = "Vui lòng chọn ít nhất một sản phẩm từ kho vào đơn.";
       loi.hidden = false;
-      chonSpInput.focus();
+      chonSpSelect.focus();
       return;
     }
 
@@ -345,4 +520,6 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
       gui.disabled = false;
     }
   });
+
+  khoiTao();
 });

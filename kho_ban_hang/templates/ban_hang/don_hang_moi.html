@@ -45,9 +45,10 @@
       <!-- Khối chọn khách hàng cũ -->
       <div id="khoi-khach-cu">
         <label>
-          Tra cứu khách hàng (theo Tên, SĐT hoặc Mã KH)
-          <input list="danh-sach-kh-goi-y" id="tim-khach-cu" placeholder="Gõ tên, số điện thoại hoặc mã KH để tìm..." autocomplete="off">
-          <datalist id="danh-sach-kh-goi-y"></datalist>
+          Chọn khách hàng đã có trong hệ thống (Được giảm 10% nếu là VIP)
+          <select id="chon-khach-cu">
+            <option value="">-- Bấm vào đây để chọn khách hàng --</option>
+          </select>
           <span class="loi-truong" data-loi-truong="ma_kh"></span>
         </label>
         <div id="thong-tin-kh-da-chon" hidden style="margin-top: .6rem; padding: .65rem .85rem; background: #edf5ee; border: 1px solid #c8decb; border-radius: .4rem; font-size: .92rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem;">
@@ -85,29 +86,89 @@
     </div>
   </fieldset>
 
-  <!-- 2. Chọn sản phẩm từ kho (Không cần thêm dòng thủ công) -->
+  <!-- 2. Chọn sản phẩm từ kho (Chọn trực tiếp, hoàn toàn không phải điền) -->
   <fieldset class="hop-con" style="border: none; padding: 0; margin-bottom: 1.5rem;">
-    <legend style="font-weight: 700; font-size: 1.05rem; margin-bottom: .8rem; color: var(--accent);">2. Chọn sản phẩm từ kho</legend>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .8rem; flex-wrap: wrap; gap: .5rem;">
+      <legend style="font-weight: 700; font-size: 1.05rem; margin: 0; color: var(--accent);">2. Chọn sản phẩm từ kho</legend>
+      <div style="display: flex; align-items: center; gap: .65rem;">
+        <span id="thoi-gian-dong-bo" class="muted" style="font-size: .85rem;">Đồng bộ từ kho</span>
+        <button type="button" id="nut-lam-moi-kho" class="secondary" style="padding: .25rem .6rem; font-size: .82rem;">🔄 Đồng bộ lại dữ liệu kho</button>
+      </div>
+    </div>
     
-    <div style="display: flex; gap: .75rem; align-items: flex-end; flex-wrap: wrap; background: #fbfcfb; padding: .85rem; border: 1px solid var(--line); border-radius: .5rem;">
-      <label style="flex: 2; min-width: 260px;">
-        Gợi ý sản phẩm bên kho (mã, tên hàng, đơn giá)
-        <input list="danh-sach-sp-goi-y" id="chon-sp-nhanh" placeholder="Chọn sản phẩm từ danh sách gợi ý..." autocomplete="off">
-        <datalist id="danh-sach-sp-goi-y"></datalist>
-      </label>
-      <label style="width: 110px;">
-        Số lượng
-        <input type="number" id="so-luong-nhanh" value="1" min="1" step="1">
-      </label>
-      <button type="button" id="nut-them-san-pham" style="height: 2.6rem;">+ Thêm vào đơn</button>
+    <div style="background: #fbfcfb; padding: 1rem; border: 1px solid var(--line); border-radius: .5rem;">
+      <div style="display: flex; gap: .75rem; align-items: flex-end; flex-wrap: wrap;">
+        <label style="flex: 2; min-width: 280px;">
+          Chọn sản phẩm (Đồng bộ trực tiếp từ phân hệ kho)
+          <select id="chon-sp-nhanh">
+            <option value="">-- Bấm vào đây để chọn sản phẩm --</option>
+          </select>
+        </label>
+        <div style="display: flex; flex-direction: column; gap: .3rem; width: 140px;">
+          <span style="font-size: .9rem; font-weight: 600;">Số lượng</span>
+          <div style="display: flex; align-items: center;">
+            <button type="button" id="nut-giam-sl" class="secondary" style="padding: .45rem .65rem; border-top-right-radius: 0; border-bottom-right-radius: 0; font-weight: 700;">-</button>
+            <input type="number" id="so-luong-nhanh" value="1" min="1" step="1" style="text-align: center; border-radius: 0; border-left: none; border-right: none; height: 2.6rem;">
+            <button type="button" id="nut-tang-sl" class="secondary" style="padding: .45rem .65rem; border-top-left-radius: 0; border-bottom-left-radius: 0; font-weight: 700;">+</button>
+          </div>
+        </div>
+        <button type="button" id="nut-them-san-pham" style="height: 2.6rem;">+ Thêm vào đơn</button>
+      </div>
+
+      <!-- Khung hiển thị chi tiết sản phẩm đang chọn từ kho -->
+      <div id="chi-tiet-sp-chon" style="margin-top: .85rem; padding: .75rem .9rem; background: #eef5ef; border: 1px solid #cce3d1; border-radius: .4rem; font-size: .92rem;" hidden>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem;">
+          <div>
+            Sản phẩm: <strong id="ct-ten-sp" style="color: var(--accent);"></strong> (<span id="ct-ma-sp"></span>)
+            | ĐVT: <span id="ct-dvt"></span>
+            | Đơn giá kho: <strong id="ct-don-gia" style="color: var(--accent);"></strong>
+          </div>
+          <div>
+            Tồn khả dụng bên kho: <strong id="ct-ton-kho" style="font-size: 1.05rem;"></strong>
+            <span id="ct-badge-ton" class="badge" style="margin-left: .3rem;"></span>
+          </div>
+        </div>
+        <div style="margin-top: .3rem; color: var(--muted); font-size: .85rem;">
+          Nhà cung cấp: <strong id="ct-ncc"></strong>
+        </div>
+      </div>
     </div>
     <span class="loi-truong" data-loi-truong="dong"></span>
 
+    <!-- Bảng chọn nhanh sản phẩm (Quick Pick Catalog) - người bán chỉ cần click chọn -->
+    <div style="margin-top: 1rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem;">
+        <span style="font-weight: 600; font-size: .9rem; color: var(--muted);">Hoặc bấm chọn trực tiếp từ danh mục hàng có sẵn trong kho:</span>
+      </div>
+      <div id="danh-muc-nhanh" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: .65rem;">
+        <!-- Tự động sinh từ API kho -->
+      </div>
+    </div>
+
     <!-- Bảng danh sách sản phẩm trong đơn -->
-    <div class="table-wrap" style="margin-top: 1rem;">
+    <div class="table-wrap" style="margin-top: 1.25rem;">
       <table>
         <thead>
           <tr>
+            <th style="width: 120px;">Mã SP</th>
+            <th>Tên sản phẩm</th>
+            <th style="width: 80px;">ĐVT</th>
+            <th class="so" style="width: 130px;">Đơn giá kho</th>
+            <th class="so" style="width: 110px;">Số lượng</th>
+            <th class="so" style="width: 140px;">Thành tiền</th>
+            <th style="width: 70px; text-align: center;">Xóa</th>
+          </tr>
+        </thead>
+        <tbody id="dong">
+          <tr id="dong-trong">
+            <td colspan="7" style="text-align: center; color: var(--muted); padding: 1.8rem;">
+              Chưa có sản phẩm nào trong đơn. Vui lòng chọn sản phẩm ở ô chọn bên trên và bấm "+ Thêm vào đơn".
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </fieldset>
             <th style="width: 120px;">Mã SP</th>
             <th>Tên sản phẩm</th>
             <th style="width: 80px;">ĐVT</th>

@@ -467,7 +467,13 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
   // ================= TAB 4: TRA CỨU HÀNG TRONG KHO =================
   const bangTraCuuKho = document.getElementById("bang-tra-cuu-kho"),
         formTimKho = document.getElementById("form-tim-kho"),
-        tuKhoaKhoInput = document.getElementById("tu-khoa-kho");
+        tuKhoaKhoInput = document.getElementById("tu-khoa-kho"),
+        nutLamMoiKhoTab = document.getElementById("nut-lam-moi-kho-tab"),
+        thoiGianKhoSync = document.getElementById("thoi-gian-kho-sync");
+
+  if (nutLamMoiKhoTab) {
+    nutLamMoiKhoTab.onclick = () => taiTraCuuKho(tuKhoaKhoInput.value.trim());
+  }
 
   formTimKho.onsubmit = (ev) => {
     ev.preventDefault();
@@ -476,10 +482,17 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
 
   async function taiTraCuuKho(tuKhoa = "") {
     bangTraCuuKho.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--muted); padding: 1.5rem;">Đang tải danh sách hàng trong kho...</td></tr>`;
+    if (thoiGianKhoSync) thoiGianKhoSync.textContent = "Đang đồng bộ...";
     try {
       const url = tuKhoa ? `/api/ban-hang/tra-cuu-kho?tu_khoa=${encodeURIComponent(tuKhoa)}` : `/api/ban-hang/tra-cuu-kho`;
       const ds = await Api.get(url);
       bangTraCuuKho.replaceChildren();
+
+      const now = new Date();
+      const gio = String(now.getHours()).padStart(2, "0") + ":" +
+                  String(now.getMinutes()).padStart(2, "0") + ":" +
+                  String(now.getSeconds()).padStart(2, "0");
+      if (thoiGianKhoSync) thoiGianKhoSync.textContent = `Đồng bộ lúc ${gio}`;
 
       if (!ds || ds.length === 0) {
         bangTraCuuKho.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--muted); padding: 2rem;">Không tìm thấy mặt hàng nào trong kho.</td></tr>`;
@@ -524,9 +537,17 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
 
         const tdThaoTac = document.createElement("td");
         tdThaoTac.style.textAlign = "center";
-        tdThaoTac.innerHTML = `
-          <a href="/ban-hang/don-hang/moi" class="button secondary" style="padding: .25rem .6rem; font-size: .82rem;">+ Lập đơn</a>
-        `;
+        const btnLapDon = document.createElement("button");
+        btnLapDon.type = "button";
+        btnLapDon.className = "secondary";
+        btnLapDon.style.padding = ".25rem .6rem";
+        btnLapDon.style.fontSize = ".82rem";
+        btnLapDon.textContent = "+ Chọn mua";
+        btnLapDon.onclick = () => {
+          sessionStorage.setItem("chon_san_pham_ma", sp.ma_sp);
+          location.href = "/ban-hang/don-hang/moi";
+        };
+        tdThaoTac.append(btnLapDon);
 
         tr.append(tdMa, tdTen, tdDm, tdDvt, tdGia, tdTon, tdNcc, tdTt, tdThaoTac);
         bangTraCuuKho.append(tr);

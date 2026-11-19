@@ -91,38 +91,55 @@ class BanHangService:
             self.don_repo.luu(don)
         return KetQuaHuyDonDTO(don.ma_don, don.trang_thai.value)
 
+    def _lay_ban_do_nha_cung_cap(self) -> dict[str, str]:
+        ncc_map = {}
+        try:
+            sql = """
+                SELECT ct.ma_sp, GROUP_CONCAT(DISTINCT n.ten_ncc) AS ten_ncc
+                FROM chi_tiet_phieu_nhap ct
+                JOIN phieu_nhap p ON ct.ma_phieu = p.ma_phieu
+                JOIN nha_cung_cap n ON p.ma_ncc = n.ma_ncc
+                GROUP BY ct.ma_sp
+            """
+            for row in self.db.execute(sql).fetchall():
+                if row["ma_sp"]:
+                    ncc_map[row["ma_sp"]] = row["ten_ncc"]
+        except Exception:
+            pass
+        return ncc_map
+
     def lay_san_pham_goi_y(self) -> list[dict]:
         danh_sach = []
+        ncc_map = self._lay_ban_do_nha_cung_cap()
+        ncc_mac_dinh = "Nhà cung cấp An Phú"
+        try:
+            row = self.db.execute("SELECT ten_ncc FROM nha_cung_cap WHERE trang_thai='HOAT_DONG' LIMIT 1").fetchone()
+            if row:
+                ncc_mac_dinh = row["ten_ncc"]
+        except Exception:
+            pass
+
         for sp in self.tra_cuu.tim_tat_ca():
             if not sp.co_the_ban():
                 continue
             so_kha_dung = self.kho.lay_so_luong_kha_dung(sp.ma_sp)
+            ten_ncc = ncc_map.get(sp.ma_sp, ncc_mac_dinh)
+            loai_sp = getattr(sp.loai, "value", str(sp.loai)) if hasattr(sp, "loai") else ""
+            ten_dm = sp.danh_muc.ten_dm if hasattr(sp, "danh_muc") and sp.danh_muc else loai_sp
             danh_sach.append({
                 "ma_sp": sp.ma_sp,
                 "ten_sp": sp.ten_sp,
+                "danh_muc": ten_dm,
                 "don_vi_tinh": sp.don_vi_tinh,
                 "gia_niem_yet": sp.gia_niem_yet,
                 "so_kha_dung": so_kha_dung,
-                "nhan_hien_thi": f"{sp.ma_sp} - {sp.ten_sp} (Giá: {sp.gia_niem_yet:,}đ | Tồn: {so_kha_dung} {sp.don_vi_tinh})"
+                "nha_cung_cap": ten_ncc,
+                "nhan_hien_thi": f"{sp.ma_sp} - {sp.ten_sp} | Giá: {sp.gia_niem_yet:,}đ | Tồn: {so_kha_dung} {sp.don_vi_tinh} (NCC: {ten_ncc})"
             })
         return danh_sach
 
     def tra_cuu_kho(self, tu_khoa: str | None = None) -> list[dict]:
-        ncc_map = {}
-        try:
-            sql_ncc = """
-                SELECT ctpn.ma_sp, ncc.ten_ncc
-                FROM chi_tiet_phieu_nhap ctpn
-                JOIN phieu_nhap pn ON ctpn.ma_phieu = pn.ma_phieu
-                JOIN nha_cung_cap ncc ON pn.ma_ncc = ncc.ma_ncc
-                ORDER BY pn.ngay_nhap DESC
-            """
-            for row in self.db.execute(sql_ncc).fetchall():
-                if row["ma_sp"] not in ncc_map:
-                    ncc_map[row["ma_sp"]] = row["ten_ncc"]
-        except Exception:
-            pass
-
+        ncc_map = self._lay_ban_do_nha_cung_cap()
         ncc_mac_dinh = "Nhà cung cấp An Phú"
         try:
             ncc_row = self.db.execute("SELECT ten_ncc FROM nha_cung_cap WHERE trang_thai='HOAT_DONG' LIMIT 1").fetchone()

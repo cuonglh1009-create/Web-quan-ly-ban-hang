@@ -249,10 +249,14 @@
         <h2>Tra cứu hàng tồn kho</h2>
         <p class="muted">Thông tin số lượng, tên hàng, nhà cung cấp, mã sản phẩm đồng bộ từ phân hệ kho</p>
       </div>
-      <form id="form-tim-kho" class="inline-form" style="margin: 0;" novalidate>
-        <input id="tu-khoa-kho" placeholder="Tìm theo mã, tên hàng hoặc nhà cung cấp..." style="width: 280px;">
-        <button type="submit">Tìm kiếm</button>
-      </form>
+      <div style="display: flex; gap: .5rem; align-items: center; flex-wrap: wrap;">
+        <span id="thoi-gian-kho-sync" class="muted" style="font-size: .85rem;">Đồng bộ từ kho</span>
+        <button type="button" id="nut-lam-moi-kho-tab" class="secondary" style="padding: .4rem .7rem;">🔄 Làm mới dữ liệu kho</button>
+        <form id="form-tim-kho" class="inline-form" style="margin: 0;" novalidate>
+          <input id="tu-khoa-kho" placeholder="Tìm theo mã, tên hàng hoặc nhà cung cấp..." style="width: 260px;">
+          <button type="submit">Tìm</button>
+        </form>
+      </div>
     </div>
 
     <div class="table-wrap">
