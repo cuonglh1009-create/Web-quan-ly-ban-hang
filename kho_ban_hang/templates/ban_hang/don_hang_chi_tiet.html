@@ -4,8 +4,13 @@
 {% block content %}
 <div id="trang" data-ma-don="{{ ma_don }}">
   <header class="page-head">
-    <h1>Đơn <span id="ma-don"></span> <span id="trang-thai"></span></h1>
-    <a class="button secondary" href="/ban-hang">Danh sách đơn</a>
+    <div>
+      <h1>Đơn <span id="ma-don"></span> <span id="trang-thai"></span></h1>
+      <p id="khach-hang-info" class="muted" style="margin-top: .25rem;" hidden>
+        Khách hàng: <strong id="ten-kh"></strong> (<span id="ma-kh"></span>) <span id="badge-vip" class="badge success" hidden>VIP - Giảm 10%</span>
+      </p>
+    </div>
+    <a class="button secondary" href="/ban-hang/don-hang">Danh sách đơn đã bán</a>
   </header>
   <p id="loi" class="loi" role="alert" hidden></p>
   <section class="hop" id="tong-hop" hidden>

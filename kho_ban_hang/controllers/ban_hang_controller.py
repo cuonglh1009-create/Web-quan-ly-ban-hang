@@ -36,3 +36,43 @@ class BanHangController:
 
     def huy_don(self, ma_phien_web, ma_don) -> PhanHoi:
         return PhanHoi(self.ban_hang.huy_don(ma_don, self._nv(ma_phien_web)).to_dict())
+
+    def lay_san_pham_goi_y(self, ma_phien_web) -> PhanHoi:
+        self._nv(ma_phien_web)
+        return PhanHoi(self.ban_hang.lay_san_pham_goi_y())
+
+    def tra_cuu_kho(self, ma_phien_web, tu_khoa: str | None = None) -> PhanHoi:
+        self._nv(ma_phien_web)
+        return PhanHoi(self.ban_hang.tra_cuu_kho(tu_khoa))
+
+    def lay_danh_sach_khach_hang(self, ma_phien_web) -> PhanHoi:
+        self._nv(ma_phien_web)
+        return PhanHoi(self.ban_hang.lay_danh_sach_khach_hang())
+
+    def tra_cuu_khach_hang(self, ma_phien_web, tu_khoa: str) -> PhanHoi:
+        self._nv(ma_phien_web)
+        return PhanHoi(self.ban_hang.tra_cuu_khach_hang(tu_khoa))
+
+    def them_khach_hang(self, ma_phien_web, du_lieu: dict) -> PhanHoi:
+        self._nv(ma_phien_web)
+        return PhanHoi(self.ban_hang.them_khach_hang(du_lieu), 201)
+
+    def lay_lich_su_khach_hang(self, ma_phien_web, ma_kh: str) -> PhanHoi:
+        self._nv(ma_phien_web)
+        return PhanHoi(self.ban_hang.lay_lich_su_khach_hang(ma_kh))
+
+    def lay_ma_khoi_tao(self, ma_phien_web) -> PhanHoi:
+        self._nv(ma_phien_web)
+        return PhanHoi(self.ban_hang.lay_ma_khoi_tao())
+
+    def lay_danh_sach_don_hang(self, ma_phien_web, trang_thai=None, tu_khoa=None) -> PhanHoi:
+        self._nv(ma_phien_web)
+        return PhanHoi(self.ban_hang.lay_danh_sach_don_hang(trang_thai, tu_khoa))
+
+    def thong_ke_doanh_thu(self, ma_phien_web, kieu="ngay") -> PhanHoi:
+        self._nv(ma_phien_web)
+        return PhanHoi(self.ban_hang.thong_ke_doanh_thu(kieu))
+
+    def thong_ke_san_pham(self, ma_phien_web) -> PhanHoi:
+        self._nv(ma_phien_web)
+        return PhanHoi(self.ban_hang.thong_ke_san_pham())

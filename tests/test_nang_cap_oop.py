@@ -86,6 +86,88 @@ class KiemThuNangCapOOP(unittest.TestCase):
             self.assertEqual(self.dang_nhap("wrong-password").status_code, 401)
         self.assertEqual(self.dang_nhap("test-only-pass").status_code, 429)
 
+    def test_chuc_nang_moi_nhan_vien_ban_hang(self):
+        # 1. Đăng nhập nhân viên bán hàng
+        csrf = self.client.get("/api/xac-thuc/phien").json["du_lieu"]["csrf_token"]
+        res_dn = self.client.post("/api/xac-thuc/dang-nhap", json={
+            "ten_dang_nhap": "nv_ban_hang", "mat_khau": "test-only-pass",
+        }, headers={"X-CSRF-Token": csrf})
+        self.assertEqual(res_dn.status_code, 200)
+        csrf = res_dn.json["du_lieu"]["csrf_token"]
+
+        # 2. Gợi ý sản phẩm và tra cứu hàng trong kho
+        res_sp = self.client.get("/api/ban-hang/san-pham-goi-y")
+        self.assertEqual(res_sp.status_code, 200)
+        cac_sp = res_sp.json["du_lieu"]
+        self.assertTrue(len(cac_sp) >= 3)
+        self.assertTrue(any(sp["ma_sp"] == "SP01" and sp["so_kha_dung"] > 0 for sp in cac_sp))
+
+        res_kho = self.client.get("/api/ban-hang/tra-cuu-kho")
+        self.assertEqual(res_kho.status_code, 200)
+        self.assertTrue(any(item["nha_cung_cap"] for item in res_kho.json["du_lieu"]))
+
+        # 3. Mã khởi tạo tự động
+        res_ma = self.client.get("/api/ban-hang/ma-khoi-tao")
+        self.assertEqual(res_ma.status_code, 200)
+        self.assertTrue(res_ma.json["du_lieu"]["ma_don_du_kien"].startswith("DH"))
+        self.assertTrue(res_ma.json["du_lieu"]["ma_kh_du_kien"].startswith("KH"))
+
+        # 4. Lập đơn với khách VIP (KH003) -> Giảm 10% chiết khấu VIP
+        # SP02: đơn giá 230.000đ, số lượng 2 -> tạm tính 460.000đ -> giảm 10% = 46.000đ -> phải trả 414.000đ
+        res_don_vip = self.client.post("/api/ban-hang/don-hang", json={
+            "ma_kh": "KH003",
+            "dong": [{"ma_sp": "SP02", "so_luong": 2}]
+        }, headers={"X-CSRF-Token": csrf})
+        self.assertEqual(res_don_vip.status_code, 201)
+        don_vip = res_don_vip.json["du_lieu"]
+        self.assertEqual(don_vip["tam_tinh"], 460_000)
+        self.assertEqual(don_vip["giam_hang_khach"], 46_000)   # 10% cho khách VIP
+        self.assertEqual(don_vip["so_phai_tra"], 414_000)
+
+        # 5. Lập đơn với khách hàng mới tự động điền mã và thông tin
+        res_don_moi = self.client.post("/api/ban-hang/don-hang", json={
+            "ten_kh": "Hoàng Minh Tuấn",
+            "sdt_kh": "0987654321",
+            "dia_chi_kh": "Hà Nội",
+            "dong": [{"ma_sp": "SP01", "so_luong": 1}]
+        }, headers={"X-CSRF-Token": csrf})
+        self.assertEqual(res_don_moi.status_code, 201)
+        don_kh_moi = res_don_moi.json["du_lieu"]
+
+        # 6. Thanh toán đơn hàng
+        res_tt = self.client.post(f"/api/ban-hang/don-hang/{don_vip['ma_don']}/thanh-toan", json={
+            "phuong_thuc": "TIEN_MAT",
+            "thong_tin": {"tien_khach_dua": 500_000}
+        }, headers={"X-CSRF-Token": csrf})
+        self.assertEqual(res_tt.status_code, 200)
+
+        # 7. Danh sách đơn hàng đã bán
+        res_ds_don = self.client.get("/api/ban-hang/don-hang")
+        self.assertEqual(res_ds_don.status_code, 200)
+        self.assertTrue(len(res_ds_don.json["du_lieu"]) >= 2)
+
+        # 8. Tra cứu khách hàng theo mã đơn, tên, sđt
+        res_tra_cuu_don = self.client.get(f"/api/ban-hang/khach-hang?tu_khoa={don_vip['ma_don']}")
+        self.assertEqual(res_tra_cuu_don.status_code, 200)
+        self.assertEqual(res_tra_cuu_don.json["du_lieu"][0]["ma_kh"], "KH003")
+
+        res_tra_cuu_ten = self.client.get("/api/ban-hang/khach-hang?tu_khoa=Tuấn")
+        self.assertEqual(res_tra_cuu_ten.status_code, 200)
+        self.assertTrue(len(res_tra_cuu_ten.json["du_lieu"]) >= 1)
+
+        # 9. Thống kê doanh thu theo ngày, tháng, năm
+        res_tk_ngay = self.client.get("/api/ban-hang/thong-ke/doanh-thu?kieu=ngay")
+        self.assertEqual(res_tk_ngay.status_code, 200)
+        self.assertTrue(len(res_tk_ngay.json["du_lieu"]) >= 1)
+        self.assertEqual(res_tk_ngay.json["du_lieu"][0]["doanh_thu"], 414_000)
+
+        # 10. Thống kê sản phẩm bán chạy (xếp nhiều nhất đến ít nhất)
+        res_tk_sp = self.client.get("/api/ban-hang/thong-ke/san-pham")
+        self.assertEqual(res_tk_sp.status_code, 200)
+        self.assertTrue(len(res_tk_sp.json["du_lieu"]) >= 1)
+        self.assertEqual(res_tk_sp.json["du_lieu"][0]["ma_sp"], "SP02")
+        self.assertEqual(res_tk_sp.json["du_lieu"][0]["tong_so_luong"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,25 +1,281 @@
 {% extends "base.html" %}
-{% block title %}Bán hàng{% endblock %}
+{% block title %}Quản lý bán hàng{% endblock %}
 {% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='ban_hang/ban_hang.css') }}">{% endblock %}
 {% block content %}
 <header class="page-head">
-  <h1>Bán hàng</h1>
-  <a class="button" href="/ban-hang/don-hang/moi">+ Lập đơn mới</a>
+  <div>
+    <h1>Quản lý bán hàng</h1>
+    <p class="muted">Hệ thống quản lý đơn hàng, khách hàng, thống kê doanh thu và tra cứu kho</p>
+  </div>
+  <div class="actions">
+    <a class="button" href="/ban-hang/don-hang/moi">+ Lập đơn bán hàng</a>
+  </div>
 </header>
-<section class="hop">
-  <h2>Lập đơn mới</h2>
-  <p class="muted">Nhập mã sản phẩm, số lượng và mã khách (nếu có); hệ thống giữ hàng ngay khi lập đơn.</p>
-  <div class="hang-nut">
-    <a href="/ban-hang/don-hang/moi"><button type="button">+ Bắt đầu lập đơn</button></a>
+
+<!-- Thanh chuyển Tab chức năng -->
+<nav class="nav-tabs" aria-label="Tabs quản lý">
+  <button type="button" class="tab-btn active" data-tab="don-hang">📋 Đơn đã bán</button>
+  <button type="button" class="tab-btn" data-tab="khach-hang">👥 Quản lý khách hàng</button>
+  <button type="button" class="tab-btn" data-tab="thong-ke">📊 Thống kê doanh thu &amp; Sản phẩm</button>
+  <button type="button" class="tab-btn" data-tab="tra-cuu-kho">📦 Tra cứu hàng trong kho</button>
+</nav>
+
+<!-- ================= TAB 1: QUẢN LÝ ĐƠN HÀNG ================= -->
+<section id="panel-don-hang" class="tab-panel">
+  <div class="hop">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem;">
+      <div class="filter-pills">
+        <span class="muted" style="font-size: .9rem; font-weight: 600;">Trạng thái:</span>
+        <button type="button" class="filter-pill active" data-tt="">Tất cả</button>
+        <button type="button" class="filter-pill" data-tt="DA_THANH_TOAN">Đã thanh toán</button>
+        <button type="button" class="filter-pill" data-tt="CHO_THANH_TOAN">Chờ thanh toán</button>
+        <button type="button" class="filter-pill" data-tt="DA_HUY">Đã hủy</button>
+      </div>
+
+      <form id="form-tim-don" class="inline-form" style="margin: 0;" novalidate>
+        <input id="tu-khoa-don" placeholder="Tìm theo mã đơn hoặc tên/SĐT khách..." style="width: 260px;">
+        <button type="submit" class="secondary">Tìm</button>
+      </form>
+    </div>
+
+    <!-- Bảng danh sách đơn hàng đã bán / đã lập -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 110px;">Mã đơn</th>
+            <th style="width: 110px;">Ngày lập</th>
+            <th>Khách hàng</th>
+            <th>Nhân viên</th>
+            <th class="so" style="width: 120px;">Tiền hàng</th>
+            <th class="so" style="width: 110px;">Giảm giá</th>
+            <th class="so" style="width: 130px;">Thanh toán</th>
+            <th style="width: 130px; text-align: center;">Trạng thái</th>
+            <th style="width: 130px; text-align: center;">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody id="bang-don-hang">
+          <tr><td colspan="9" style="text-align: center; color: var(--muted); padding: 1.5rem;">Đang tải danh sách đơn hàng...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
-<section class="hop">
-  <h2>Tra cứu đơn theo mã</h2>
-  <form id="form-tra-cuu" novalidate class="inline-form">
-    <label>Mã đơn <input name="ma_don" placeholder="Ví dụ: DH000001" required></label>
-    <button type="submit">Mở đơn</button>
-    <p id="loi" class="loi" role="alert" hidden style="width: 100%;"></p>
-  </form>
+
+<!-- ================= TAB 2: QUẢN LÝ KHÁCH HÀNG ================= -->
+<section id="panel-khach-hang" class="tab-panel" hidden>
+  <div class="hop">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem;">
+      <div>
+        <h2>Tra cứu &amp; Quản lý khách hàng</h2>
+        <p class="muted">Tra cứu nhanh qua <strong>Mã đơn hàng, Tên khách, Số điện thoại</strong> hoặc <strong>Mã khách hàng</strong></p>
+      </div>
+      <button type="button" id="nut-mo-them-kh" class="button">+ Thêm khách hàng mới</button>
+    </div>
+
+    <!-- Form tra cứu khách hàng -->
+    <form id="form-tra-cuu-kh" class="inline-form" novalidate style="margin-bottom: 1.25rem;">
+      <label style="flex: 1; min-width: 280px;">
+        Từ khóa tra cứu
+        <input id="tu-khoa-kh" placeholder="Nhập mã đơn (DH000001), tên khách, SĐT (09...) hoặc mã KH...">
+      </label>
+      <button type="submit">Tra cứu</button>
+      <button type="button" id="nut-xem-tat-ca-kh" class="secondary">Xem tất cả</button>
+    </form>
+
+    <!-- Khối thêm khách hàng mới (ẩn/hiện) -->
+    <div id="khoi-them-kh" style="background: #fbfcfb; border: 1px solid var(--accent); border-radius: .5rem; padding: 1rem; margin-bottom: 1.25rem;" hidden>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .8rem;">
+        <strong style="color: var(--accent);">Thêm khách hàng mới</strong>
+        <button type="button" id="nut-dong-them-kh" class="quiet" style="font-size: .85rem;">Đóng</button>
+      </div>
+      <form id="form-them-kh-moi" novalidate>
+        <div class="field-grid">
+          <label>
+            Mã KH (tự động điền)
+            <input id="them-ma-kh" name="ma_kh" readonly style="background: #eef2ed; font-weight: 600; color: var(--accent);">
+          </label>
+          <label>
+            Họ tên khách hàng <span style="color: var(--loi)">*</span>
+            <input name="ho_ten" placeholder="Nhập họ và tên..." required>
+          </label>
+          <label>
+            Số điện thoại <span style="color: var(--loi)">*</span>
+            <input name="so_dien_thoai" placeholder="Ví dụ: 0912345678" required>
+          </label>
+          <label>
+            Địa chỉ
+            <input name="dia_chi" placeholder="Ví dụ: Hà Nội">
+          </label>
+        </div>
+        <div class="hang-nut" style="margin-top: .8rem;">
+          <button type="submit">Lưu khách hàng</button>
+          <button type="button" id="nut-huy-them-kh" class="secondary">Hủy</button>
+        </div>
+        <p id="loi-them-kh" class="loi" role="alert" hidden style="margin-top: .5rem;"></p>
+      </form>
+    </div>
+
+    <!-- Bảng danh sách khách hàng -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 90px;">Mã KH</th>
+            <th>Họ tên khách hàng</th>
+            <th style="width: 120px;">Số điện thoại</th>
+            <th>Địa chỉ</th>
+            <th class="so" style="width: 80px;">Điểm</th>
+            <th style="width: 110px; text-align: center;">Hạng</th>
+            <th class="so" style="width: 130px;">Tổng chi tiêu</th>
+            <th class="so" style="width: 70px;">Số đơn</th>
+            <th style="width: 110px; text-align: center;">Lịch sử đơn</th>
+          </tr>
+        </thead>
+        <tbody id="bang-khach-hang">
+          <tr><td colspan="9" style="text-align: center; color: var(--muted); padding: 1.5rem;">Đang tải danh sách khách hàng...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Modal xem lịch sử đơn mua -->
+    <div id="khoi-lich-su-kh" style="margin-top: 1.25rem; background: #fbfcfb; border: 1px solid var(--line); border-radius: .5rem; padding: 1rem;" hidden>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .8rem;">
+        <div>
+          <strong>Lịch sử mua hàng của: <span id="ls-ten-kh" style="color: var(--accent);"></span></strong>
+          <span id="ls-hang-badge" class="badge" style="margin-left: .5rem;"></span>
+        </div>
+        <button type="button" id="nut-dong-lich-su" class="secondary" style="padding: .2rem .5rem; font-size: .8rem;">Đóng</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Mã đơn</th>
+              <th>Ngày lập</th>
+              <th>Người lập đơn</th>
+              <th class="so">Tổng thanh toán</th>
+              <th>Trạng thái</th>
+              <th style="text-align: center;">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="bang-lich-su-kh"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TAB 3: THỐNG KÊ DOANH THU & SẢN PHẨM ================= -->
+<section id="panel-thong-ke" class="tab-panel" hidden>
+  <!-- Các thẻ chỉ số tổng quan -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="label">Tổng doanh thu thực tế</span>
+      <span class="val" id="tk-tong-doanh-thu">0 đ</span>
+    </div>
+    <div class="stat-card">
+      <span class="label">Số đơn đã thanh toán</span>
+      <span class="val" id="tk-tong-don">0</span>
+    </div>
+    <div class="stat-card">
+      <span class="label">Tổng tiền chiết khấu &amp; giảm giá</span>
+      <span class="val" id="tk-tong-giam" style="color: var(--muted);">0 đ</span>
+    </div>
+  </div>
+
+  <!-- 1. Thống kê doanh thu theo ngày, tháng, năm -->
+  <div class="hop">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem;">
+      <div>
+        <h2>Thống kê doanh thu</h2>
+        <p class="muted">Theo dõi doanh thu chi tiết từ các đơn hàng đã thanh toán thành công</p>
+      </div>
+      <div class="filter-pills">
+        <button type="button" class="filter-pill active" data-kieu="ngay">Theo ngày</button>
+        <button type="button" class="filter-pill" data-kieu="thang">Theo tháng</button>
+        <button type="button" class="filter-pill" data-kieu="nam">Theo năm</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th id="cot-thoi-gian">Thời gian</th>
+            <th class="so">Số đơn hoàn thành</th>
+            <th class="so">Tổng tiền hàng</th>
+            <th class="so">Chiết khấu &amp; Giảm giá</th>
+            <th class="so" style="font-weight: 750; color: var(--accent);">Doanh thu thực thu</th>
+          </tr>
+        </thead>
+        <tbody id="bang-thong-ke-doanh-thu">
+          <tr><td colspan="5" style="text-align: center; color: var(--muted); padding: 1.5rem;">Đang tải dữ liệu doanh thu...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 2. Thống kê sản phẩm đã bán được (xếp nhiều nhất đến ít nhất) -->
+  <div class="hop">
+    <h2>Xếp hạng sản phẩm bán chạy</h2>
+    <p class="muted">Sắp xếp theo thứ tự số lượng sản phẩm bán được nhiều nhất đến ít nhất</p>
+
+    <div class="table-wrap" style="margin-top: .8rem;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 70px; text-align: center;">Xếp hạng</th>
+            <th style="width: 110px;">Mã SP</th>
+            <th>Tên sản phẩm</th>
+            <th style="width: 80px;">ĐVT</th>
+            <th class="so" style="width: 130px; font-weight: 750;">Số lượng đã bán</th>
+            <th class="so" style="width: 160px; font-weight: 750; color: var(--accent);">Tổng doanh thu</th>
+          </tr>
+        </thead>
+        <tbody id="bang-thong-ke-san-pham">
+          <tr><td colspan="6" style="text-align: center; color: var(--muted); padding: 1.5rem;">Đang tải thống kê sản phẩm...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TAB 4: TRA CỨU HÀNG TRONG KHO ================= -->
+<section id="panel-tra-cuu-kho" class="tab-panel" hidden>
+  <div class="hop">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem;">
+      <div>
+        <h2>Tra cứu hàng tồn kho</h2>
+        <p class="muted">Thông tin số lượng, tên hàng, nhà cung cấp, mã sản phẩm đồng bộ từ phân hệ kho</p>
+      </div>
+      <form id="form-tim-kho" class="inline-form" style="margin: 0;" novalidate>
+        <input id="tu-khoa-kho" placeholder="Tìm theo mã, tên hàng hoặc nhà cung cấp..." style="width: 280px;">
+        <button type="submit">Tìm kiếm</button>
+      </form>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 100px;">Mã SP</th>
+            <th>Tên hàng hóa</th>
+            <th>Loại / Danh mục</th>
+            <th style="width: 70px;">ĐVT</th>
+            <th class="so" style="width: 120px;">Đơn giá niêm yết</th>
+            <th class="so" style="width: 130px; font-weight: 750;">Số lượng khả dụng</th>
+            <th>Nhà cung cấp</th>
+            <th style="width: 120px; text-align: center;">Tình trạng</th>
+            <th style="width: 110px; text-align: center;">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody id="bang-tra-cuu-kho">
+          <tr><td colspan="9" style="text-align: center; color: var(--muted); padding: 1.5rem;">Đang tải danh sách hàng trong kho...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </section>
 {% endblock %}
 {% block js %}

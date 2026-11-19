@@ -10,10 +10,10 @@ class CauHinh:
     nguong_ton_kho: int = 5
     so_ngay_canh_bao: int = 30
     so_tien_moi_diem: int = 10_000          # bao nhiêu đồng thực trả = 1 điểm
-    nguong_diem_vip: int = 1000             # đủ điểm này thì nâng VIP
+    nguong_diem_vip: int = 200              # 200 điểm * 10.000đ = 2.000.000đ mua hàng thì nâng VIP
     thoi_han_phien_gio: int = 8
     ty_le_chiet_khau_thuong: Decimal = Decimal("0")
-    ty_le_chiet_khau_vip: Decimal = Decimal("0.05")
+    ty_le_chiet_khau_vip: Decimal = Decimal("0.10")  # Khách VIP giảm 10% tổng hóa đơn
     # --- khóa bổ sung do TV2 thêm (cần TV1 duyệt) ---
     khoa_bi_mat: str = ""                   # đọc từ môi trường, dùng băm mã phiên
     cookie_secure: bool = False

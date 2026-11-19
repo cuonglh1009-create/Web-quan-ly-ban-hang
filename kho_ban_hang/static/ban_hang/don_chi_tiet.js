@@ -19,9 +19,19 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
     tt.textContent = { CHO_THANH_TOAN: "Chờ thanh toán", DA_THANH_TOAN: "Đã thanh toán",
       DA_HUY: "Đã hủy" }[d.trang_thai] || d.trang_thai;
     tt.className = "badge " + (d.trang_thai === "DA_THANH_TOAN" ? "success" : d.trang_thai === "DA_HUY" ? "danger" : "warning");
+
+    if (d.ten_kh) {
+      const khInfo = $("khach-hang-info");
+      khInfo.hidden = false;
+      $("ten-kh").textContent = d.ten_kh;
+      $("ma-kh").textContent = d.ma_kh || "";
+      const isVip = d.hang_kh === "VIP";
+      $("badge-vip").hidden = !isVip;
+    }
+
     $("tam-tinh").textContent = Api.tien(d.tam_tinh);
-    $("giam-khach").textContent = Api.tien(d.giam_hang_khach);
-    $("giam-km").textContent = Api.tien(d.giam_khuyen_mai);
+    $("giam-khach").textContent = (d.giam_hang_khach > 0 ? "- " : "") + Api.tien(d.giam_hang_khach);
+    $("giam-km").textContent = (d.giam_khuyen_mai > 0 ? "- " : "") + Api.tien(d.giam_khuyen_mai);
     $("phai-tra").textContent = Api.tien(d.so_phai_tra);
     $("tong-hop").hidden = false;
     const cho = d.trang_thai === "CHO_THANH_TOAN";

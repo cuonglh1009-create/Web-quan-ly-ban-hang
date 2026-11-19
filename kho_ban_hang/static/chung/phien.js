@@ -42,8 +42,16 @@ const Api = {
     if (menu) menu.replaceChildren();
     if (!p.da_dang_nhap) { ten.textContent = ""; nut.hidden = true; return; }
     if (menu) {
-      const muc = p.nguoi_dung.vai_tro === "NV_KHO" ? [["/kho", "Kho"]] : [["/ban-hang", "Bán hàng"],
-                    ["/ban-hang/don-hang/moi", "Lập đơn"]];
+      const muc = p.nguoi_dung.vai_tro === "NV_KHO"
+        ? [["/kho", "Kho"]]
+        : [
+            ["/ban-hang", "Tổng quan"],
+            ["/ban-hang/don-hang/moi", "Lập đơn mới"],
+            ["/ban-hang/don-hang", "Đơn đã bán"],
+            ["/ban-hang/khach-hang", "Khách hàng"],
+            ["/ban-hang/thong-ke", "Thống kê"],
+            ["/ban-hang/tra-cuu-kho", "Tra cứu kho"],
+          ];
       for (const [href, nhan] of muc) {
         const a = document.createElement("a"); a.href = href; a.textContent = nhan;
         if (location.pathname === href) {

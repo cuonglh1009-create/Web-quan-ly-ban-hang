@@ -12,9 +12,103 @@ class DonHangRepository:
     def cap_ma_moi(self) -> str:
         """Gọi trong GiaoDich (đang giữ khóa ghi) nên không cấp trùng."""
         self.db.execute("INSERT OR IGNORE INTO bo_dem_ma VALUES ('don_hang', 0)")
+        row = self.db.execute(
+            "SELECT MAX(CAST(SUBSTR(ma_don, 3) AS INTEGER)) FROM don_hang WHERE ma_don LIKE 'DH%'"
+        ).fetchone()
+        max_hien_tai = row[0] if (row and row[0] is not None) else 0
+        dem_hien_tai = self.db.execute(
+            "SELECT gia_tri FROM bo_dem_ma WHERE ten='don_hang'"
+        ).fetchone()[0]
+        if max_hien_tai > dem_hien_tai:
+            self.db.execute("UPDATE bo_dem_ma SET gia_tri = ? WHERE ten='don_hang'", (max_hien_tai,))
         self.db.execute("UPDATE bo_dem_ma SET gia_tri = gia_tri + 1 WHERE ten='don_hang'")
         n = self.db.execute("SELECT gia_tri FROM bo_dem_ma WHERE ten='don_hang'").fetchone()[0]
         return f"DH{n:06d}"
+
+    def lay_ma_du_kien(self) -> str:
+        self.db.execute("INSERT OR IGNORE INTO bo_dem_ma VALUES ('don_hang', 0)")
+        row = self.db.execute(
+            "SELECT MAX(CAST(SUBSTR(ma_don, 3) AS INTEGER)) FROM don_hang WHERE ma_don LIKE 'DH%'"
+        ).fetchone()
+        max_hien_tai = row[0] if (row and row[0] is not None) else 0
+        dem_hien_tai = self.db.execute(
+            "SELECT gia_tri FROM bo_dem_ma WHERE ten='don_hang'"
+        ).fetchone()[0]
+        n = max(max_hien_tai, dem_hien_tai) + 1
+        return f"DH{n:06d}"
+
+    def lay_danh_sach(self, trang_thai: str | None = None, tu_khoa: str | None = None) -> list[dict]:
+        params = []
+        where_clauses = []
+        if trang_thai:
+            where_clauses.append("dh.trang_thai = ?")
+            params.append(trang_thai)
+        if tu_khoa:
+            like = f"%{tu_khoa.strip()}%"
+            where_clauses.append("(dh.ma_don LIKE ? OR kh.ho_ten LIKE ? OR kh.so_dien_thoai LIKE ?)")
+            params.extend([like, like, like])
+        where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+        sql = f"""
+            SELECT dh.ma_don, dh.ngay_lap, dh.trang_thai, dh.giam_hang_khach, dh.giam_khuyen_mai,
+                   dh.ma_nv, nv.ho_ten AS ten_nv,
+                   dh.ma_kh, kh.ho_ten AS ten_kh, kh.so_dien_thoai AS sdt_kh, kh.hang AS hang_kh,
+                   COALESCE(ct.tong_tien_hang, 0) AS tong_tien_hang,
+                   COALESCE(hd.tong_thanh_toan, MAX(0, COALESCE(ct.tong_tien_hang, 0) - dh.giam_hang_khach - dh.giam_khuyen_mai)) AS tong_thanh_toan,
+                   hd.ma_hd
+            FROM don_hang dh
+            LEFT JOIN nhan_vien nv ON dh.ma_nv = nv.ma_nv
+            LEFT JOIN khach_hang kh ON dh.ma_kh = kh.ma_kh
+            LEFT JOIN hoa_don hd ON dh.ma_don = hd.ma_don
+            LEFT JOIN (
+                SELECT ma_don, SUM(so_luong * don_gia) AS tong_tien_hang
+                FROM chi_tiet_don_hang
+                GROUP BY ma_don
+            ) ct ON dh.ma_don = ct.ma_don
+            {where_sql}
+            ORDER BY dh.ngay_lap DESC, dh.ma_don DESC
+        """
+        rows = self.db.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
+
+    def thong_ke_doanh_thu(self, kieu: str = "ngay") -> list[dict]:
+        kieu = (kieu or "ngay").lower()
+        if kieu == "nam":
+            dinh_dang = "SUBSTR(dh.ngay_lap, 1, 4)"
+        elif kieu == "thang":
+            dinh_dang = "SUBSTR(dh.ngay_lap, 1, 7)"
+        else:
+            dinh_dang = "dh.ngay_lap"
+        sql = f"""
+            SELECT {dinh_dang} AS thoi_gian,
+                   COUNT(DISTINCT dh.ma_don) AS so_don,
+                   COALESCE(SUM(hd.tong_tien_truoc_giam), 0) AS tong_tien_hang,
+                   COALESCE(SUM(hd.tong_giam), 0) AS tong_giam,
+                   COALESCE(SUM(hd.tong_thanh_toan), 0) AS doanh_thu
+            FROM don_hang dh
+            JOIN hoa_don hd ON dh.ma_don = hd.ma_don
+            WHERE dh.trang_thai = 'DA_THANH_TOAN'
+            GROUP BY {dinh_dang}
+            ORDER BY thoi_gian DESC
+        """
+        rows = self.db.execute(sql).fetchall()
+        return [dict(r) for r in rows]
+
+    def thong_ke_san_pham_ban_chay(self) -> list[dict]:
+        sql = """
+            SELECT ct.ma_sp,
+                   COALESCE(sp.ten_sp, ct.ma_sp) AS ten_sp,
+                   COALESCE(sp.don_vi_tinh, '') AS don_vi_tinh,
+                   SUM(ct.so_luong) AS tong_so_luong,
+                   SUM(ct.so_luong * ct.don_gia) AS tong_doanh_thu
+            FROM chi_tiet_don_hang ct
+            JOIN don_hang dh ON ct.ma_don = dh.ma_don
+            LEFT JOIN san_pham sp ON ct.ma_sp = sp.ma_sp
+            WHERE dh.trang_thai = 'DA_THANH_TOAN'
+            GROUP BY ct.ma_sp
+            ORDER BY tong_so_luong DESC, tong_doanh_thu DESC
+        """
+        rows = self.db.execute(sql).fetchall()
+        return [dict(r) for r in rows]
 
     def tim_theo_ma(self, ma_don) -> DonHang | None:
         r = self.db.execute("SELECT * FROM don_hang WHERE ma_don=?", (ma_don,)).fetchone()
