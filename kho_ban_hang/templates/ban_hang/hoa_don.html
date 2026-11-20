@@ -23,12 +23,12 @@
       <tr><th>Tổng trước giảm</th><td class="so" id="truoc-giam"></td></tr>
       <tr><th>Tổng giảm</th><td class="so" id="tong-giam"></td></tr>
       <tr class="hang-noi-bat"><th>Thanh toán</th><td class="so"><strong id="tong-tt"></strong></td></tr>
-      <tr id="hang-tien-thoi" hidden><th>Tiền thối</th><td class="so" id="tien-thoi"></td></tr>
+      <tr id="hang-tien-thoi" hidden><th>Tiền trả lại</th><td class="so" id="tien-thoi"></td></tr>
     </table>
   </section>
   <div class="hang-nut khong-in">
-    <button type="button" onclick="window.print()">In hóa đơn</button>
-    <a id="ve-don" href="#"><button type="button" class="secondary">Về đơn hàng</button></a>
+    <button type="button" data-in-invoice disabled>In hóa đơn</button>
+    <a id="ve-don" class="button secondary" href="#">Về đơn hàng</a>
   </div>
 </div>
 {% endblock %}

@@ -19,5 +19,6 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async () => {
     $("tong-tt").textContent = Api.tien(d.tong_thanh_toan);
     if (d.tien_thoi !== null) { $("hang-tien-thoi").hidden = false; $("tien-thoi").textContent = Api.tien(d.tien_thoi); }
     $("hoa-don").hidden = false;
+    const print=document.querySelector("[data-in-invoice]");print.disabled=false;print.onclick=()=>window.print();
   } catch (e) { const l = $("loi"); l.textContent = e.thong_bao; l.hidden = false; }
-});
+}).catch(error=>Api.hienLoiPhien(error));

@@ -23,10 +23,12 @@ class PhieuNhapRepository:
             raise KhongTimThayError(f"Không tìm thấy phiếu {ma_phieu}.", "ma_phieu")
         ngay_nhap = date.fromisoformat(row["ngay_nhap"])
         chi_tiet = []
-        for dong in self.ket_noi_db.execute(
+        cac_dong = self.ket_noi_db.execute(
             "SELECT * FROM chi_tiet_phieu_nhap WHERE ma_phieu = ? ORDER BY stt", (ma_phieu,)
-        ):
-            sp = self.san_pham_repo.tim_theo_ma(dong["ma_sp"])
+        ).fetchall()
+        san_pham = self.san_pham_repo.tim_nhieu(dong["ma_sp"] for dong in cac_dong)
+        for dong in cac_dong:
+            sp = san_pham[dong["ma_sp"]]
             lo = LoHang(
                 dong["ma_lo"], sp, ngay_nhap,
                 date.fromisoformat(dong["ngay_san_xuat"]) if dong["ngay_san_xuat"] else None,

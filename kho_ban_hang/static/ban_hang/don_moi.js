@@ -63,6 +63,9 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
 
   // 1. Tải và đồng bộ dữ liệu kho & khách hàng
   async function dongBoDuLieuKho(thongBao = false) {
+    if(nutLamMoiKho.disabled)return;
+    const selected=chonSpSelect.value;
+    nutLamMoiKho.disabled=true;
     try {
       if (thoiGianDongBo) thoiGianDongBo.textContent = "Đang đồng bộ từ kho...";
       const spData = await Api.get("/api/ban-hang/san-pham-goi-y");
@@ -70,19 +73,30 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
         khoSanPhams = spData;
         capNhatDropdownSanPham(spData);
         capNhatDanhMucNhanh(spData);
+        if(spData.some(sp=>sp.ma_sp===selected))chonSpSelect.value=selected;
+        for(const dong of cacDongHang){
+          const current=spData.find(sp=>sp.ma_sp===dong.ma_sp);
+          dong.so_kha_dung=current?.so_kha_dung||0;
+          if(current)dong.don_gia=current.gia_niem_yet;
+        }
+        capNhatBang();
+        if(chonSpSelect.value)hienThiChiTietSanPhamChon(chonSpSelect.value);
       }
       const now = new Date();
       const gio = String(now.getHours()).padStart(2, "0") + ":" +
                   String(now.getMinutes()).padStart(2, "0") + ":" +
                   String(now.getSeconds()).padStart(2, "0");
       if (thoiGianDongBo) thoiGianDongBo.textContent = `Đồng bộ lúc ${gio}`;
-      if (thongBao) {
-        loi.hidden = true;
+      if(thongBao)loi.hidden=true;
+      if(cacDongHang.some(dong=>dong.so_luong>dong.so_kha_dung)){
+        loi.textContent="Tồn kho vừa thay đổi. Có mặt hàng trong đơn vượt số lượng khả dụng; hãy điều chỉnh trước khi lập đơn.";
+        loi.hidden=false;
       }
     } catch (err) {
       console.error("Lỗi đồng bộ kho:", err);
-      if (thoiGianDongBo) thoiGianDongBo.textContent = "Lỗi đồng bộ kho";
-    }
+      if (thoiGianDongBo) thoiGianDongBo.textContent = "Chưa đồng bộ được";
+      loi.textContent=err.thong_bao||"Không tải được tồn kho. Bấm đồng bộ lại để thử lại.";loi.hidden=false;
+    } finally {nutLamMoiKho.disabled=false;}
   }
 
   async function khoiTao() {
@@ -112,7 +126,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
         hienThiChiTietSanPhamChon(maSpLuu);
       }
     } catch (err) {
-      console.error("Lỗi khởi tạo:", err);
+      loi.textContent=err.thong_bao||"Không tải được dữ liệu lập đơn. Hãy tải lại trang.";loi.hidden=false;
     }
   }
 
@@ -173,14 +187,14 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
       for (const k of ketQua) {
         const item = document.createElement("div");
         item.style.cssText = "padding: .5rem .75rem; border-bottom: 1px solid #edf2ee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background .15s;";
-        item.onmouseover = () => item.style.background = "#edf5ee";
+        item.onmouseover = () => item.style.background = "var(--accent-soft)";
         item.onmouseout = () => item.style.background = "#fff";
 
         const laVip = k.hang === "VIP";
         item.innerHTML = `
           <div>
-            <strong>${k.ho_ten}</strong> (<span style="color: var(--accent); font-weight: 600;">${k.ma_kh}</span>)
-            <span style="color: var(--muted); margin-left: .4rem; font-size: .85rem;">SĐT: ${k.so_dien_thoai || "Chưa có"}</span>
+            <strong>${Api.html(k.ho_ten)}</strong> (<span style="color: var(--accent); font-weight: 600;">${Api.html(k.ma_kh)}</span>)
+            <span style="color: var(--muted); margin-left: .4rem; font-size: .85rem;">SĐT: ${Api.html(k.so_dien_thoai || "Chưa có")}</span>
           </div>
           <div>
             <span class="badge ${laVip ? "success" : ""}" style="font-size: .8rem;">${laVip ? "VIP ⭐ (Giảm 10%)" : "THƯỜNG"}</span>
@@ -307,8 +321,8 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
       canhBaoTrungKhach.hidden = false;
       const laVip = khachTrungPhatHien.hang === "VIP";
       noiDungTrungKhach.innerHTML = `
-        <strong>${khachTrungPhatHien.ho_ten}</strong> (Mã KH: <strong>${khachTrungPhatHien.ma_kh}</strong>)
-        - SĐT: <strong>${khachTrungPhatHien.so_dien_thoai || "(Chưa có)"}</strong>
+        <strong>${Api.html(khachTrungPhatHien.ho_ten)}</strong> (Mã KH: <strong>${Api.html(khachTrungPhatHien.ma_kh)}</strong>)
+        - SĐT: <strong>${Api.html(khachTrungPhatHien.so_dien_thoai || "(Chưa có)")}</strong>
         - Hạng: <span class="badge ${laVip ? "success" : ""}">${laVip ? "VIP ⭐ (Giảm 10%)" : "THƯỜNG"}</span>
       `;
     } else {
@@ -420,13 +434,13 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
       card.innerHTML = `
         <div>
           <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: .3rem;">
-            <strong style="font-size: .92rem; color: var(--ink);">${sp.ten_sp}</strong>
+            <strong style="font-size: .92rem; color: var(--ink);">${Api.html(sp.ten_sp)}</strong>
             <span class="badge ${hetHang ? "danger" : (sp.so_kha_dung <= 5 ? "warning" : "success")}" style="font-size: .75rem; white-space: nowrap;">
               ${hetHang ? "Hết" : "Tồn " + sp.so_kha_dung}
             </span>
           </div>
-          <div style="font-size: .88rem; font-weight: 750; color: var(--accent); margin-top: .15rem;">${Api.tien(sp.gia_niem_yet)} <span style="font-size: .75rem; font-weight: 400; color: var(--muted);">/ ${sp.don_vi_tinh}</span></div>
-          <div style="font-size: .78rem; color: var(--muted); margin-top: .2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">NCC: ${sp.nha_cung_cap || "An Phú"}</div>
+          <div style="font-size: .88rem; font-weight: 750; color: var(--accent); margin-top: .15rem;">${Api.tien(sp.gia_niem_yet)} <span style="font-size: .75rem; font-weight: 400; color: var(--muted);">/ ${Api.html(sp.don_vi_tinh)}</span></div>
+          <div style="font-size: .78rem; color: var(--muted); margin-top: .2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">NCC: ${Api.html(sp.nha_cung_cap || "Chưa ghi nhận")}</div>
         </div>
       `;
 
@@ -545,11 +559,11 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
 
       // Mã SP
       const tdMa = document.createElement("td");
-      tdMa.innerHTML = `<strong>${dong.ma_sp}</strong>`;
+      tdMa.innerHTML = `<strong>${Api.html(dong.ma_sp)}</strong>`;
 
       // Tên SP
       const tdTen = document.createElement("td");
-      tdTen.innerHTML = `<strong>${dong.ten_sp}</strong>`;
+      tdTen.innerHTML = `<strong>${Api.html(dong.ten_sp)}</strong>`;
 
       // ĐVT
       const tdDvt = document.createElement("td");
@@ -675,6 +689,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
   // 7. Gửi lập đơn
   form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
+    if(gui.disabled)return;
     xoaLoi();
 
     if (cacDongHang.length === 0) {
@@ -715,6 +730,8 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
     };
 
     gui.disabled = true;
+    gui.textContent = "Đang lập đơn…";
+    form.setAttribute("aria-busy","true");
     try {
       const kq = await Api.post("/api/ban-hang/don-hang", payload);
       location.href = "/ban-hang/don-hang/" + encodeURIComponent(kq.ma_don);
@@ -722,8 +739,10 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
       hienLoi(e);
     } finally {
       gui.disabled = false;
+      gui.textContent="Lập đơn & Giữ hàng";
+      form.setAttribute("aria-busy","false");
     }
   });
 
   khoiTao();
-});
+}).catch(error=>Api.hienLoiPhien(error));

@@ -24,15 +24,15 @@ class NhapKhoService:
                 self.phieu_nhap_repo.cap_ma_moi(), du_lieu.ngay_nhap, nguoi_lap,
                 self.nha_cung_cap_repo.tim_theo_ma(du_lieu.ma_ncc),
             )
+            san_pham = self.san_pham_repo.tim_nhieu(dong.ma_sp for dong in du_lieu.dong)
             ma_lo_da_doc = set()
             for i, dong in enumerate(du_lieu.dong):
                 if dong.ma_lo in ma_lo_da_doc:
                     raise TrungMaLoError("Mã lô bị lặp trong phiếu.", f"dong[{i}].ma_lo")
                 ma_lo_da_doc.add(dong.ma_lo)
-                try:
-                    sp = self.san_pham_repo.tim_theo_ma(dong.ma_sp)
-                except KhongTimThayError as loi:
-                    raise KhongTimThayError(loi.thong_bao, f"dong[{i}].ma_sp") from loi
+                sp = san_pham.get(dong.ma_sp)
+                if sp is None:
+                    raise KhongTimThayError(f"Không tìm thấy sản phẩm {dong.ma_sp}.", f"dong[{i}].ma_sp")
                 lo = LoHang(
                     dong.ma_lo, sp, du_lieu.ngay_nhap, dong.ngay_san_xuat,
                     dong.han_su_dung, dong.so_luong_nhap, dong.gia_nhap,

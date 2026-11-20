@@ -10,7 +10,7 @@
         Khách hàng: <strong id="ten-kh"></strong> (<span id="ma-kh"></span>) <span id="badge-vip" class="badge success" hidden>VIP - Giảm 10%</span>
       </p>
     </div>
-    <a class="button secondary" href="/ban-hang/don-hang">Danh sách đơn đã bán</a>
+    <a class="button secondary" href="/ban-hang/don-hang">Danh sách đơn hàng</a>
   </header>
   <p id="loi" class="loi" role="alert" hidden></p>
   <section class="hop" id="tong-hop" hidden>
@@ -41,9 +41,10 @@
           <option value="CHUYEN_KHOAN">Chuyển khoản</option>
         </select></label>
       <div id="nhom-tien-mat">
-        <label>Tiền khách đưa <input name="tien_khach_dua" inputmode="numeric" placeholder="Ví dụ: 500000">
+        <label>Tiền khách đưa (đồng) <input name="tien_khach_dua" inputmode="numeric" placeholder="Ví dụ: 500000">
           <span class="loi-truong" data-loi-truong="thong_tin.tien_khach_dua"></span></label>
       </div>
+      <p id="du-kien-tien-thoi" class="muted" role="status" hidden></p>
       <div id="nhom-chuyen-khoan" hidden>
         <div class="field-grid">
           <label>Số tiền đối soát <input name="so_tien_doi_soat" inputmode="numeric" placeholder="Nhập số tiền">
@@ -61,7 +62,7 @@
   </section>
 
   <div class="hang-nut">
-    <a id="lien-ket-hoa-don" href="#" hidden><button type="button">Xem hóa đơn</button></a>
+    <a id="lien-ket-hoa-don" class="button" href="#" hidden>Xem hóa đơn</a>
     <button type="button" id="nut-huy" class="nguy-hiem" hidden>Hủy đơn</button>
   </div>
 </div>

@@ -1,9 +1,8 @@
 {% extends "kho/layout.html" %}
-{% block title %}Phiếu nhập {{ ma_phieu }}<script type="application/json" id="du-lieu-kho">{{ danh_muc|tojson }}</script>
-{% endblock %}
+{% block title %}Phiếu nhập {{ ma_phieu }}{% endblock %}
 {% block content %}
 <a class="breadcrumb" href="{{ url_for('kho.danh_sach_phieu') }}">← Phiếu nhập</a>
-<header class="page-head"><div><h1>Chi tiết phiếu nhập</h1><p class="mono muted">{{ ma_phieu }}</p></div><button type="button" class="button secondary" data-print>In phiếu</button></header>
+<header class="page-head"><div><h1>Chi tiết phiếu nhập</h1><p class="mono muted">{{ ma_phieu }}</p></div><button type="button" class="button secondary" data-print disabled>In phiếu</button></header>
 <p class="notice" data-error hidden role="alert"></p>
 <section class="panel" data-receipt="{{ ma_phieu }}">
   <p data-loading aria-live="polite">Đang tải phiếu…</p>
@@ -23,4 +22,5 @@
     <p data-feedback role="status" hidden></p>
   </div>
 </section>
+<script type="application/json" id="du-lieu-kho">{{ danh_muc|tojson }}</script>
 {% endblock %}

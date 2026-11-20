@@ -18,11 +18,20 @@ class LoHangRepository:
     def tim_theo_san_pham(self, ma_sp: str) -> list[LoHang]:
         return self.tim(ma_sp=ma_sp)
 
+    @staticmethod
+    def _bo_loc(ma_lo, ma_sp):
+        # Chỉ ghép tên cột cố định; mọi giá trị đầu vào đều truyền bằng tham số.
+        dieu_kien, tham_so = [], []
+        for cot, gia_tri in (("ma_lo", ma_lo), ("ma_sp", ma_sp)):
+            if gia_tri is not None:
+                dieu_kien.append(f"lo.{cot} = ?")
+                tham_so.append(gia_tri)
+        return (" AND ".join(dieu_kien) or "1=1"), tham_so
+
     def tim(self, ma_lo: str | None = None, ma_sp: str | None = None) -> list[LoHang]:
+        dieu_kien, tham_so = self._bo_loc(ma_lo, ma_sp)
         ds = self.ket_noi_db.execute(
-            """SELECT * FROM lo_hang WHERE (? IS NULL OR ma_lo = ?) AND (? IS NULL OR ma_sp = ?)
-               ORDER BY ma_lo""",
-            (ma_lo, ma_lo, ma_sp, ma_sp),
+            "SELECT lo.* FROM lo_hang lo WHERE " + dieu_kien + " ORDER BY lo.ma_lo", tham_so,
         )
         return self._tao_nhieu(ds.fetchall())
 
@@ -32,14 +41,14 @@ class LoHangRepository:
         ).fetchall())
 
     def tim_voi_so_dang_giu(self, ma_lo: str | None, ma_sp: str | None, uu_tien_xuat: bool = False) -> list[tuple[LoHang, int]]:
+        dieu_kien, tham_so = self._bo_loc(ma_lo, ma_sp)
         rows = self.ket_noi_db.execute(
             """SELECT lo.*, COALESCE((
                    SELECT SUM(giu.so_luong) FROM giu_hang AS giu WHERE giu.ma_lo = lo.ma_lo
                ), 0) AS dang_giu
                FROM lo_hang AS lo
-               WHERE (? IS NULL OR lo.ma_lo = ?) AND (? IS NULL OR lo.ma_sp = ?)
-               ORDER BY """ + ("lo.han_su_dung IS NULL, lo.han_su_dung, lo.ngay_nhap, lo.ma_lo" if uu_tien_xuat else "lo.ma_lo"),
-            (ma_lo, ma_lo, ma_sp, ma_sp),
+               WHERE """ + dieu_kien + " ORDER BY " + ("lo.han_su_dung IS NULL, lo.han_su_dung, lo.ngay_nhap, lo.ma_lo" if uu_tien_xuat else "lo.ma_lo"),
+            tham_so,
         ).fetchall()
         return list(zip(self._tao_nhieu(rows), (row["dang_giu"] for row in rows)))
 

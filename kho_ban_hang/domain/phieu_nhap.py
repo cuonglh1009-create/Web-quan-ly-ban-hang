@@ -18,6 +18,12 @@ class ChiTietPhieuNhap:
 
     def kiem_tra_hop_le(self, ngay_nhap: date, tien_to: str = "") -> None:
         lo = self.lo_hang
+        if lo.san_pham.ma_sp != self.san_pham.ma_sp:
+            raise DuLieuKhongHopLeError("Sản phẩm của lô không khớp dòng phiếu.", tien_to + "ma_sp")
+        if lo.ngay_nhap != ngay_nhap:
+            raise DuLieuKhongHopLeError("Ngày nhập lô không khớp ngày phiếu.", tien_to + "ngay_nhap")
+        if lo.so_luong_con_lai != self.so_luong_nhap or lo.gia_nhap != self.gia_nhap:
+            raise DuLieuKhongHopLeError("Số lượng hoặc giá nhập của lô không khớp dòng phiếu.", tien_to + "so_luong_nhap")
         for ten, gia_tri in (("so_luong_nhap", self.so_luong_nhap), ("gia_nhap", self.gia_nhap)):
             if type(gia_tri) is not int or gia_tri <= 0:
                 raise DuLieuKhongHopLeError("Phải là số nguyên dương.", tien_to + ten)

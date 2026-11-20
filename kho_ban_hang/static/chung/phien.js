@@ -2,24 +2,32 @@ const Api = {
   csrf: null,
   phien: null,
 
-  async goi(phuongThuc, url, thanBody) {
+  async goi(phuongThuc, url, thanBody, options = {}) {
     const tieuDe = { Accept: "application/json" };
     if (phuongThuc !== "GET") {
       tieuDe["Content-Type"] = "application/json";
       tieuDe["X-CSRF-Token"] = Api.csrf;          // gửi cho mọi POST
     }
-    const r = await fetch(url, { method: phuongThuc, headers: tieuDe, credentials: "same-origin",
-      body: phuongThuc === "GET" ? undefined : JSON.stringify(thanBody ?? {}) });
+    let r;
+    try {
+      r = await fetch(url, { method: phuongThuc, headers: tieuDe, credentials: "same-origin",
+        signal: options.signal, body: phuongThuc === "GET" ? undefined : JSON.stringify(thanBody ?? {}) });
+    } catch(error) {
+      if(error.name==="AbortError")throw error;
+      throw {ma_loi:"LOI_MANG",thong_bao:"Không kết nối được máy chủ. Kiểm tra kết nối rồi thử lại.",truong:null};
+    }
     let d = null;
     try { d = await r.json(); } catch (_) { /* thân rỗng */ }
     if (!r.ok) {
       const loi = (d && d.loi) || { ma_loi: "LOI_MANG", thong_bao: "Không kết nối được máy chủ", truong: null };
       loi.status = r.status;
+      if(r.status===401 && Api.phien?.da_dang_nhap) location.assign("/dang-nhap");
       throw loi;
     }
+    if(!d || !Object.prototype.hasOwnProperty.call(d,"du_lieu"))throw {ma_loi:"PHAN_HOI_KHONG_HOP_LE",thong_bao:"Máy chủ trả dữ liệu không hợp lệ. Vui lòng thử lại.",truong:null};
     return d.du_lieu;
   },
-  get(url) { return Api.goi("GET", url); },
+  get(url, options) { return Api.goi("GET", url, undefined, options); },
   post(url, body) {
     return Api.goi("POST", url, body).then((kq) => {
       if (kq && kq.csrf_token) Api.csrf = kq.csrf_token;   // đăng nhập đổi CSRF theo phiên mới
@@ -40,21 +48,20 @@ const Api = {
     const menu = document.getElementById("menu"), ten = document.getElementById("nguoi-dung"),
           nut = document.getElementById("nut-dang-xuat");
     if (menu) menu.replaceChildren();
-    if (!p.da_dang_nhap) { ten.textContent = ""; nut.hidden = true; return; }
+    if (!p.da_dang_nhap) { if(ten)ten.textContent = ""; if(nut)nut.hidden = true; return; }
     if (menu) {
       const muc = p.nguoi_dung.vai_tro === "NV_KHO"
         ? [["/kho", "Kho"]]
         : [
-            ["/ban-hang", "Tổng quan"],
             ["/ban-hang/don-hang/moi", "Lập đơn mới"],
-            ["/ban-hang/don-hang", "Đơn đã bán"],
+            ["/ban-hang/don-hang", "Đơn hàng"],
             ["/ban-hang/khach-hang", "Khách hàng"],
             ["/ban-hang/thong-ke", "Thống kê"],
             ["/ban-hang/tra-cuu-kho", "Tra cứu kho"],
           ];
       for (const [href, nhan] of muc) {
         const a = document.createElement("a"); a.href = href; a.textContent = nhan;
-        if (location.pathname === href) {
+        if (location.pathname === href || (href === "/ban-hang/don-hang" && location.pathname === "/ban-hang")) {
           a.setAttribute("aria-current", "page");
         }
         menu.append(a);
@@ -62,7 +69,28 @@ const Api = {
     }
     ten.textContent = p.nguoi_dung.ho_ten;
     nut.hidden = false;
-    nut.onclick = async () => { const kq = await Api.post("/api/xac-thuc/dang-xuat", {}); location.href = kq.trang_chu; };
+    nut.onclick = async () => {
+      if(nut.disabled)return;
+      nut.disabled=true;
+      try {const kq=await Api.post("/api/xac-thuc/dang-xuat",{});location.href=kq.trang_chu;}
+      catch(error){Api.hienLoiPhien(error);}
+      finally{nut.disabled=false;}
+    };
+  },
+
+  hienLoiPhien(error) {
+    const main=document.querySelector("#main");
+    if(!main)return;
+    let notice=main.querySelector("[data-session-error]");
+    if(!notice){notice=document.createElement("div");notice.className="notice";notice.dataset.sessionError="";notice.setAttribute("role","alert");main.prepend(notice);}
+    notice.replaceChildren();
+    const text=document.createElement("p");text.textContent=error.thong_bao||error.message||"Không tải được phiên làm việc.";
+    const retry=document.createElement("button");retry.type="button";retry.className="secondary";retry.textContent="Tải lại trang";retry.onclick=()=>location.reload();
+    notice.append(text,retry);
+  },
+
+  html(value) {
+    return String(value ?? "").replace(/[&<>"\']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","\'":"&#39;"}[char]));
   },
 
   tien(n) { return new Intl.NumberFormat("vi-VN").format(n) + " đ"; },

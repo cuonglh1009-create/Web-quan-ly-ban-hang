@@ -4,8 +4,8 @@
 {% block content %}
 <header class="page-head">
   <div>
-    <h1>Quản lý bán hàng</h1>
-    <p class="muted">Hệ thống quản lý đơn hàng, khách hàng, thống kê doanh thu và tra cứu kho</p>
+    <h1 data-sales-heading>Đơn hàng</h1>
+    <p class="muted" data-sales-description>Theo dõi đơn chờ thanh toán, đơn đã thanh toán và đơn đã hủy.</p>
   </div>
   <div class="actions">
     <a class="button" href="/ban-hang/don-hang/moi">+ Lập đơn bán hàng</a>
@@ -14,10 +14,10 @@
 
 <!-- Thanh chuyển Tab chức năng -->
 <nav class="nav-tabs" aria-label="Tabs quản lý">
-  <button type="button" class="tab-btn active" data-tab="don-hang">📋 Đơn đã bán</button>
-  <button type="button" class="tab-btn" data-tab="khach-hang">👥 Quản lý khách hàng</button>
-  <button type="button" class="tab-btn" data-tab="thong-ke">📊 Thống kê doanh thu &amp; Sản phẩm</button>
-  <button type="button" class="tab-btn" data-tab="tra-cuu-kho">📦 Tra cứu hàng trong kho</button>
+  <button type="button" class="tab-btn active" data-tab="don-hang">Đơn hàng</button>
+  <button type="button" class="tab-btn" data-tab="khach-hang">Quản lý khách hàng</button>
+  <button type="button" class="tab-btn" data-tab="thong-ke">Doanh thu &amp; Sản phẩm</button>
+  <button type="button" class="tab-btn" data-tab="tra-cuu-kho">Tra cứu hàng trong kho</button>
 </nav>
 
 <!-- ================= TAB 1: QUẢN LÝ ĐƠN HÀNG ================= -->
@@ -84,7 +84,7 @@
     </form>
 
     <!-- Khối thêm khách hàng mới (ẩn/hiện) -->
-    <div id="khoi-them-kh" style="background: #fbfcfb; border: 1px solid var(--accent); border-radius: .5rem; padding: 1rem; margin-bottom: 1.25rem;" hidden>
+    <div id="khoi-them-kh" style="background: var(--surface-muted); border: 1px solid var(--accent); border-radius: .5rem; padding: 1rem; margin-bottom: 1.25rem;" hidden>
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .8rem;">
         <strong style="color: var(--accent);">Thêm khách hàng mới</strong>
         <button type="button" id="nut-dong-them-kh" class="quiet" style="font-size: .85rem;">Đóng</button>
@@ -93,7 +93,7 @@
         <div class="field-grid">
           <label>
             Mã KH (tự động điền)
-            <input id="them-ma-kh" name="ma_kh" readonly style="background: #eef2ed; font-weight: 600; color: var(--accent);">
+            <input id="them-ma-kh" name="ma_kh" readonly style="background: var(--surface-muted); font-weight: 600; color: var(--accent);">
           </label>
           <label>
             Họ tên khách hàng <span style="color: var(--loi)">*</span>
@@ -139,7 +139,7 @@
     </div>
 
     <!-- Modal xem lịch sử đơn mua -->
-    <div id="khoi-lich-su-kh" style="margin-top: 1.25rem; background: #fbfcfb; border: 1px solid var(--line); border-radius: .5rem; padding: 1rem;" hidden>
+    <div id="khoi-lich-su-kh" style="margin-top: 1.25rem; background: var(--surface-muted); border: 1px solid var(--line); border-radius: .5rem; padding: 1rem;" hidden>
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .8rem;">
         <div>
           <strong>Lịch sử mua hàng của: <span id="ls-ten-kh" style="color: var(--accent);"></span></strong>
@@ -198,6 +198,7 @@
       </div>
     </div>
 
+    <figure class="revenue-figure"><figcaption>Doanh thu của tối đa 7 kỳ có giao dịch gần nhất</figcaption><div class="revenue-chart" data-revenue-chart aria-live="polite">Đang tải biểu đồ…</div></figure>
     <div class="table-wrap">
       <table>
         <thead>

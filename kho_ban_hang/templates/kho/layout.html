@@ -8,6 +8,7 @@
   <title>{% block title %}Quản lý kho{% endblock %} · Kho &amp; Bán hàng</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='kho/kho.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='chung/workspace.css') }}">
+  <script src="{{ url_for('static',filename='chung/workspace.js') }}" defer></script>
   <script type="module" src="{{ url_for('static', filename='kho/kho.js') }}"></script>
 </head>
 <body>
@@ -22,12 +23,13 @@
       <a href="{{ url_for(endpoint) }}"{% if selected %} aria-current="page"{% endif %}>{{ label }}</a>
       {% endfor %}
     </nav>
-    <div class="sidebar-bottom"><span class="status-dot"></span> Phân hệ Kho</div>
+    <div class="sidebar-bottom">Nhập hàng · Tồn kho · Hạn dùng</div>
   </aside>
   <div class="workspace">
     <header class="topbar">
       <button type="button" class="icon-button mobile-menu" data-toggle-menu aria-controls="kho-navigation" aria-expanded="false" aria-label="Mở menu">Menu</button>
       <span class="topbar-title">Không gian làm việc <span>/</span> Kho</span>
+      {% include "_workspace_tools.html" %}
       <div class="account"><span><strong id="nguoi-dung">{{ nhan_vien.ho_ten }}</strong><small>Nhân viên kho</small></span>
         <button id="nut-dang-xuat" class="quiet" type="button" hidden>Đăng xuất</button>
       </div>
@@ -37,6 +39,6 @@
   </div>
 </div>
 <script src="{{ url_for('static', filename='chung/phien.js') }}"></script>
-<script>Api.khoiTao({ batBuoc: "NV_KHO" });</script>
+<script>Api.khoiTao({ batBuoc: "NV_KHO" }).catch(error=>Api.hienLoiPhien(error));</script>
 </body>
 </html>

@@ -86,6 +86,7 @@ def tao_kho_blueprint(lay_controller, lay_ma_phien, kiem_tra_csrf, endpoint_dang
         return trang("index", lambda c: {
             "phieu_list": c.danh_sach_phieu(lay_ma_phien())[:5],
             "ngay_hom_nay": date.today().strftime("%d/%m/%Y"),
+            "danh_muc": c.du_lieu_giao_dien(lay_ma_phien()),
         })
 
     @bp.get("/kho/phieu-nhap/moi")

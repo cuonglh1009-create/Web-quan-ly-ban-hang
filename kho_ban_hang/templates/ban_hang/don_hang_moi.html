@@ -7,26 +7,26 @@
     <h1>Lập đơn bán hàng</h1>
     <p class="muted">Đơn giá tự động lấy từ kho - Khách VIP được giảm 10% tổng hóa đơn</p>
   </div>
-  <a class="button secondary" href="/ban-hang/don-hang">Danh sách đơn đã bán</a>
+  <a class="button secondary" href="/ban-hang/don-hang">Danh sách đơn hàng</a>
 </header>
 
 <form id="form-don" class="hop" novalidate>
   <!-- 1. Thông tin đơn hàng & Khách hàng -->
   <fieldset class="hop-con" style="border: none; padding: 0; margin-bottom: 1.5rem;">
-    <legend style="font-weight: 700; font-size: 1.05rem; margin-bottom: .8rem; color: var(--accent);">1. Thông tin đơn hàng &amp; Khách hàng</legend>
+    <legend style="font-weight: 700; font-size: 1.05rem; margin-bottom: .8rem; color: var(--accent);">Thông tin đơn hàng &amp; Khách hàng</legend>
     <div class="field-grid">
       <label>
         Mã đơn hàng (hệ thống tự động điền)
-        <input id="ma-don-du-kien" name="ma_don_hien_thi" readonly style="background: #eef2ed; font-weight: 600; color: var(--accent);" value="Đang tải...">
+        <input id="ma-don-du-kien" name="ma_don_hien_thi" readonly style="background: var(--surface-muted); font-weight: 600; color: var(--accent);" value="Đang tải...">
       </label>
       <label>
         Nhân viên lập đơn
-        <input id="ten-nhan-vien" readonly style="background: #eef2ed;" value="Nhân viên bán hàng">
+        <input id="ten-nhan-vien" readonly style="background: var(--surface-muted);" value="Nhân viên bán hàng">
       </label>
     </div>
 
     <!-- 1. Tích hợp Thông tin Khách hàng (Nhập, Chọn hoặc Thêm mới nhanh ngay tại chỗ) -->
-    <div style="margin-top: 1rem; padding: 1.1rem; background: #fbfcfb; border: 1px solid var(--line); border-radius: .5rem;">
+    <div style="margin-top: 1rem; padding: 1.1rem; background: var(--surface-muted); border: 1px solid var(--line); border-radius: .5rem;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .85rem; flex-wrap: wrap; gap: .5rem;">
         <div>
           <span style="font-weight: 700; font-size: .95rem; color: var(--ink);">Khách hàng mua hàng:</span>
@@ -57,7 +57,7 @@
 
         <!-- Hộp danh sách gợi ý khi gõ tìm kiếm -->
         <div id="hop-goi-y-khach" style="margin-top: .6rem; border: 1px solid var(--accent); border-radius: .4rem; background: #fff; max-height: 230px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,.08);" hidden>
-          <div style="padding: .4rem .7rem; background: #eef5ef; font-size: .82rem; font-weight: 600; color: var(--accent); border-bottom: 1px solid #d4e7d8;">
+          <div style="padding: .4rem .7rem; background: var(--accent-soft); font-size: .82rem; font-weight: 600; color: var(--accent); border-bottom: 1px solid var(--line);">
             Khách hàng phù hợp trong hệ thống (Bấm để chọn):
           </div>
           <div id="danh-sach-goi-y-khach"></div>
@@ -67,11 +67,11 @@
         </div>
 
         <!-- Thẻ hiển thị khách hàng đã chọn -->
-        <div id="thong-tin-kh-da-chon" hidden style="margin-top: .75rem; padding: .75rem .95rem; background: #edf5ee; border: 1px solid #c8decb; border-radius: .45rem; font-size: .92rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem;">
+        <div id="thong-tin-kh-da-chon" hidden style="margin-top: .75rem; padding: .75rem .95rem; background: var(--accent-soft); border: 1px solid var(--line); border-radius: .45rem; font-size: .92rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem;">
           <div>
             Khách hàng: <strong id="ten-kh-hien-thi"></strong> (<span id="ma-kh-hien-thi"></span>) - SĐT: <strong id="sdt-kh-hien-thi"></strong>
             - Hạng: <span id="hang-kh-hien-thi" class="badge"></span>
-            <span id="kh-chiet-khau-badge" style="margin-left: .4rem; color: #185a3c; font-weight: 600; font-size: .85rem;"></span>
+            <span id="kh-chiet-khau-badge" style="margin-left: .4rem; color: var(--accent); font-weight: 600; font-size: .85rem;"></span>
           </div>
           <button type="button" id="nut-bo-chon-kh" class="secondary" style="padding: .25rem .6rem; font-size: .82rem;">Đổi khách hàng</button>
         </div>
@@ -86,7 +86,7 @@
         <div class="field-grid">
           <label>
             Mã khách hàng (tự động cấp)
-            <input id="ma-kh-tu-dong" name="ma_kh_moi" readonly style="background: #eef2ed; font-weight: 600; color: var(--accent);" placeholder="Tự sinh (vd: KH004)">
+            <input id="ma-kh-tu-dong" name="ma_kh_moi" readonly style="background: var(--surface-muted); font-weight: 600; color: var(--accent);" placeholder="Tự sinh (vd: KH004)">
           </label>
           <label>
             Họ tên khách hàng <span style="color: var(--loi)">*</span>
@@ -123,18 +123,18 @@
     </div>
   </fieldset>
 
-  <!-- 2. Chọn sản phẩm từ kho (Chọn trực tiếp, hoàn toàn không phải điền) -->
+  <!-- Chọn sản phẩm từ kho (Chọn trực tiếp, hoàn toàn không phải điền) -->
   <fieldset class="hop-con" style="border: none; padding: 0; margin-bottom: 1.5rem;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .8rem; flex-wrap: wrap; gap: .5rem;">
-      <legend style="font-weight: 700; font-size: 1.05rem; margin: 0; color: var(--accent);">2. Chọn sản phẩm từ kho</legend>
-      <div style="display: flex; align-items: center; gap: .65rem;">
+      <legend style="font-weight: 700; font-size: 1.05rem; margin: 0; color: var(--accent);">Chọn sản phẩm từ kho</legend>
+      <div class="sales-sync" style="display: flex; align-items: center; gap: .65rem;">
         <span id="thoi-gian-dong-bo" class="muted" style="font-size: .85rem;">Đồng bộ từ kho</span>
         <button type="button" id="nut-lam-moi-kho" class="secondary" style="padding: .25rem .6rem; font-size: .82rem;">🔄 Đồng bộ lại dữ liệu kho</button>
       </div>
     </div>
     
-    <div style="background: #fbfcfb; padding: 1rem; border: 1px solid var(--line); border-radius: .5rem;">
-      <div style="display: flex; gap: .75rem; align-items: flex-end; flex-wrap: wrap;">
+    <div style="background: var(--surface-muted); padding: 1rem; border: 1px solid var(--line); border-radius: .5rem;">
+      <div class="sales-product-picker">
         <label style="flex: 2; min-width: 280px;">
           Chọn sản phẩm (Đồng bộ trực tiếp từ phân hệ kho)
           <select id="chon-sp-nhanh">
@@ -153,7 +153,7 @@
       </div>
 
       <!-- Khung hiển thị chi tiết sản phẩm đang chọn từ kho -->
-      <div id="chi-tiet-sp-chon" style="margin-top: .85rem; padding: .75rem .9rem; background: #eef5ef; border: 1px solid #cce3d1; border-radius: .4rem; font-size: .92rem;" hidden>
+      <div id="chi-tiet-sp-chon" style="margin-top: .85rem; padding: .75rem .9rem; background: var(--accent-soft); border: 1px solid var(--line); border-radius: .4rem; font-size: .92rem;" hidden>
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem;">
           <div>
             Sản phẩm: <strong id="ct-ten-sp" style="color: var(--accent);"></strong> (<span id="ct-ma-sp"></span>)
@@ -173,14 +173,12 @@
     <span class="loi-truong" data-loi-truong="dong"></span>
 
     <!-- Bảng chọn nhanh sản phẩm (Quick Pick Catalog) - người bán chỉ cần click chọn -->
-    <div style="margin-top: 1rem;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem;">
-        <span style="font-weight: 600; font-size: .9rem; color: var(--muted);">Hoặc bấm chọn trực tiếp từ danh mục hàng có sẵn trong kho:</span>
-      </div>
+    <details class="quick-catalog">
+      <summary>Chọn nhanh từ danh mục sản phẩm</summary>
       <div id="danh-muc-nhanh" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: .65rem;">
         <!-- Tự động sinh từ API kho -->
       </div>
-    </div>
+    </details>
 
     <!-- Bảng danh sách sản phẩm trong đơn -->
     <div class="table-wrap" style="margin-top: 1.25rem;">
@@ -208,14 +206,14 @@
   </fieldset>
 
   <!-- 3. Tính tiền và Chiết khấu VIP -->
-  <div style="background: #fbfcfb; border: 1px solid var(--line); border-radius: .5rem; padding: 1.25rem; margin-top: 1rem;">
+  <div style="background: var(--surface-muted); border: 1px solid var(--line); border-radius: .5rem; padding: 1.25rem; margin-top: 1rem;">
     <div style="display: flex; justify-content: flex-end;">
       <div style="width: 100%; max-width: 380px;">
         <div style="display: flex; justify-content: space-between; padding: .35rem 0;">
           <span class="muted">Tổng tiền hàng:</span>
           <strong id="hien-thi-tam-tinh">0 đ</strong>
         </div>
-        <div id="hang-chiet-khau-vip" style="display: flex; justify-content: space-between; padding: .35rem 0; color: #185a3c;" hidden>
+        <div id="hang-chiet-khau-vip" style="display: flex; justify-content: space-between; padding: .35rem 0; color: var(--accent);" hidden>
           <span>Chiết khấu VIP (<strong id="ty-le-vip">10%</strong>):</span>
           <strong id="hien-thi-giam-vip">- 0 đ</strong>
         </div>

@@ -1,6 +1,5 @@
 {% extends "kho/layout.html" %}
-{% block title %}Cảnh báo tồn kho<script type="application/json" id="du-lieu-kho">{{ danh_muc|tojson }}</script>
-{% endblock %}
+{% block title %}Cảnh báo tồn kho{% endblock %}
 {% block content %}
 <header class="page-head"><div><h1>Cảnh báo tồn kho</h1><p class="muted">Ưu tiên bổ sung hàng tồn thấp và xử lý lô gần hết hạn.</p></div><a class="button secondary" href="{{ url_for('kho.lo_hang') }}">Xem lô hàng →</a></header>
 <p class="notice" data-error hidden role="alert"></p>
@@ -18,4 +17,5 @@
     </ul>
   </section>
 </div>
+<script type="application/json" id="du-lieu-kho">{{ danh_muc|tojson }}</script>
 {% endblock %}

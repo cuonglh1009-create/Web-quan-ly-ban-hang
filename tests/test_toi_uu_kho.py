@@ -83,6 +83,71 @@ class ToiUuKhoTest(unittest.TestCase):
             self.kho.xac_nhan_xuat_kho("TEST-ROLLBACK")
         self.assertEqual(self.kho.lay_so_luong_kha_dung("SP02"), before - 1)
 
+    def test_phieu_nhieu_dong_doc_san_pham_theo_luot(self):
+        from kho_ban_hang.repositories.ban_hang.nhan_vien_repository import NhanVienRepository
+        from kho_ban_hang.contracts.kho_dto import PhieuNhapDTO, DongNhapDTO
+        nv = NhanVienRepository(self.conn).tim_theo_ma
+        nhap = dang_ky_kho(self.conn, self.cfg, nv).nhap_kho
+        phieu = nhap.lap_phieu(PhieuNhapDTO("NCC01", date.today(), [
+            DongNhapDTO("SP02", f"RECEIPT-{i}", 2, 100) for i in range(100)
+        ]), nv("NV001"))
+        queries = []
+        self.conn.set_trace_callback(queries.append)
+        try:
+            actual = nhap.tra_cuu_phieu(phieu.ma_phieu)
+        finally:
+            self.conn.set_trace_callback(None)
+        self.assertEqual(len(actual.chi_tiet), 100)
+        self.assertLessEqual(sum(q.lstrip().upper().startswith("SELECT") for q in queries), 5)
+
+    def test_dong_phieu_khong_duoc_mau_thuan_voi_lo(self):
+        from dataclasses import replace
+        from kho_ban_hang.domain.lo_hang import LoHang
+        from kho_ban_hang.domain.phieu_nhap import ChiTietPhieuNhap
+        from kho_ban_hang.domain.errors import DuLieuKhongHopLeError
+        sp = self.kho.san_pham_repo.tim_theo_ma("SP02")
+        khac = self.kho.san_pham_repo.tim_theo_ma("SP03")
+        lo = LoHang("TEST-ENTITY", sp, date.today(), None, None, 2, 100)
+        dong = ChiTietPhieuNhap(sp, 2, 100, lo)
+        dong.kiem_tra_hop_le(date.today())
+        for bad in [
+            replace(dong, san_pham=khac), replace(dong, so_luong_nhap=3),
+            replace(dong, gia_nhap=200),
+            replace(dong, lo_hang=replace(lo, ngay_nhap=date.today()-timedelta(days=1))),
+        ]:
+            with self.subTest(bad=bad):
+                with self.assertRaises(DuLieuKhongHopLeError):
+                    bad.kiem_tra_hop_le(date.today())
+
+    def test_hai_don_dong_thoi_khong_giu_vuot_ton(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Barrier
+        from kho_ban_hang.domain.errors_kho import KhongDuTonKhoError
+        today = date.today().isoformat()
+        self.conn.execute("UPDATE lo_hang SET so_luong_con_lai=0 WHERE ma_sp='SP02'")
+        self.conn.execute("INSERT INTO lo_hang VALUES ('CONCURRENT','SP02',?,NULL,NULL,2,100)", (today,))
+        self.conn.executemany(
+            "INSERT INTO don_hang(ma_don,ngay_lap,trang_thai,ma_nv) VALUES (?,?,'CHO_THANH_TOAN','NV002')",
+            [("PARALLEL-1", today), ("PARALLEL-2", today)],
+        )
+        barrier = Barrier(2)
+        def reserve(code):
+            with closing(ket_noi(self.db)) as conn:
+                kho = dang_ky_kho(conn, self.cfg, lambda _: None).kho
+                barrier.wait(timeout=5)
+                try:
+                    with GiaoDich(conn):
+                        kho.giu_hang(code, [ChiTietDatHangDTO("SP02", 2)])
+                    return "ok"
+                except KhongDuTonKhoError:
+                    return "insufficient"
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            result = list(pool.map(reserve, ["PARALLEL-1", "PARALLEL-2"]))
+        self.assertCountEqual(result, ["ok", "insufficient"])
+        self.assertEqual(self.conn.execute(
+            "SELECT SUM(so_luong) FROM giu_hang WHERE ma_lo='CONCURRENT'"
+        ).fetchone()[0], 2)
+
 
 if __name__ == "__main__":
     unittest.main()

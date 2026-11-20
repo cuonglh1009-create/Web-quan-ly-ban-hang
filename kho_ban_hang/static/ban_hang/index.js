@@ -3,42 +3,80 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
   const tabButtons = document.querySelectorAll(".tab-btn"),
         tabPanels = document.querySelectorAll(".tab-panel");
 
-  function chuyenTab(tabName) {
+  const duongDanTab = {"don-hang":"/ban-hang/don-hang","khach-hang":"/ban-hang/khach-hang","thong-ke":"/ban-hang/thong-ke","tra-cuu-kho":"/ban-hang/tra-cuu-kho"};
+  const tieuDeTab = {
+    "don-hang":["Đơn hàng","Theo dõi đơn chờ thanh toán, đơn đã thanh toán và đơn đã hủy."],
+    "khach-hang":["Khách hàng","Tra cứu thông tin, thêm khách hàng và xem lịch sử mua hàng."],
+    "thong-ke":["Thống kê doanh thu","Theo dõi doanh thu thực thu và các sản phẩm đã bán."],
+    "tra-cuu-kho":["Tra cứu kho","Kiểm tra hàng có thể bán trước khi lập đơn."]
+  };
+  function tabHienTai(){return Object.keys(duongDanTab).find(key=>duongDanTab[key]===location.pathname)||"don-hang";}
+  function chuyenTab(tabName, luuLichSu=false) {
+    if(!duongDanTab[tabName])return;
+    if(luuLichSu && location.pathname!==duongDanTab[tabName]) history.pushState(null,"",duongDanTab[tabName]);
+    const [title,description]=tieuDeTab[tabName];
+    document.querySelector("[data-sales-heading]").textContent=title;
+    document.querySelector("[data-sales-description]").textContent=description;
+    document.title=title+" · Kho & Bán hàng";
     tabButtons.forEach((btn) => {
       const active = btn.dataset.tab === tabName;
       btn.classList.toggle("active", active);
+      btn.setAttribute("aria-selected",String(active));
+      btn.tabIndex = active ? 0 : -1;
     });
     tabPanels.forEach((panel) => {
       panel.hidden = panel.id !== `panel-${tabName}`;
+      panel.setAttribute("role","tabpanel");
+      panel.setAttribute("aria-labelledby","tab-" + panel.id.replace("panel-",""));
     });
 
+    const currentPath = tabName === "don-hang" ? "/ban-hang/don-hang" : "/ban-hang/" + tabName;
+    document.querySelectorAll("#menu a").forEach(link => {
+      if(link.getAttribute("href") === currentPath) link.setAttribute("aria-current","page");
+      else link.removeAttribute("aria-current");
+    });
     // Tải dữ liệu tương ứng theo tab
     if (tabName === "don-hang") taiDanhSachDon();
-    else if (tabName === "khach-hang") taiDanhSachKhach();
+    else if (tabName === "khach-hang") taiDanhSachKhach(document.getElementById("tu-khoa-kh")?.value.trim() || "");
     else if (tabName === "thong-ke") taiThongKe();
-    else if (tabName === "tra-cuu-kho") taiTraCuuKho();
+    else if (tabName === "tra-cuu-kho") taiTraCuuKho(document.getElementById("tu-khoa-kho").value.trim());
   }
 
-  tabButtons.forEach((btn) => {
+  document.querySelector(".nav-tabs")?.setAttribute("role","tablist");
+  tabButtons.forEach((btn,index) => {
+    btn.id = "tab-" + btn.dataset.tab;
+    btn.setAttribute("role","tab");
+    btn.setAttribute("aria-controls","panel-" + btn.dataset.tab);
+    btn.addEventListener("keydown",event => {
+      const keys = ["ArrowLeft","ArrowRight","Home","End"];
+      if(!keys.includes(event.key))return;
+      event.preventDefault();
+      let target = event.key==="Home" ? 0 : event.key==="End" ? tabButtons.length-1 :
+        (index+(event.key==="ArrowRight"?1:-1)+tabButtons.length)%tabButtons.length;
+      tabButtons[target].click();tabButtons[target].focus();
+    });
     btn.onclick = () => {
-      const tab = btn.dataset.tab;
-      chuyenTab(tab);
-      // Cập nhật URL mà không reload trang
-      const duongDan = tab === "don-hang" ? "/ban-hang/don-hang" : `/ban-hang/${tab}`;
-      history.replaceState(null, "", duongDan);
+      chuyenTab(btn.dataset.tab,true);
     };
   });
 
-  // Tự động nhận diện tab dựa trên đường dẫn URL
-  const p = location.pathname;
-  // Chờ các biến bảng và bộ lọc được khởi tạo xong trước khi tải tab.
-  queueMicrotask(() => {
-    if (p.includes("khach-hang")) chuyenTab("khach-hang");
-    else if (p.includes("thong-ke")) chuyenTab("thong-ke");
-    else if (p.includes("tra-cuu-kho")) chuyenTab("tra-cuu-kho");
-    else chuyenTab("don-hang");
+  document.querySelector("#menu").addEventListener("click",event=>{
+    const link=event.target.closest("a");
+    if(!link || event.ctrlKey||event.metaKey||event.shiftKey||event.altKey||event.button!==0)return;
+    const tab=Object.keys(duongDanTab).find(key=>duongDanTab[key]===new URL(link.href).pathname);
+    if(!tab)return;
+    event.preventDefault();chuyenTab(tab,true);
+    document.dispatchEvent(new Event("workspace:navigated"));
   });
+  window.addEventListener("popstate",()=>chuyenTab(tabHienTai()));
+  // Tất cả biến của các bảng phải khởi tạo trước lượt tải đầu tiên.
+  queueMicrotask(()=>chuyenTab(tabHienTai()));
 
+  const requests=new Map();
+  function batDauTai(key){
+    requests.get(key)?.abort();
+    const controller=new AbortController();requests.set(key,controller);return controller;
+  }
   // ================= TAB 1: ĐƠN ĐÃ BÁN =================
   let locTrangThaiDon = "";
   const bangDonHang = document.getElementById("bang-don-hang"),
@@ -61,6 +99,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
   };
 
   async function taiDanhSachDon() {
+    const request=batDauTai("don");
     bangDonHang.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--muted); padding: 1.5rem;">Đang tải danh sách đơn hàng...</td></tr>`;
     try {
       const tk = tuKhoaDonInput.value.trim();
@@ -68,7 +107,8 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
       if (locTrangThaiDon) url += `trang_thai=${encodeURIComponent(locTrangThaiDon)}&`;
       if (tk) url += `tu_khoa=${encodeURIComponent(tk)}&`;
 
-      const ds = await Api.get(url);
+      const ds = await Api.get(url,{signal:request.signal});
+      if(request.signal.aborted)return;
       bangDonHang.replaceChildren();
 
       if (!ds || ds.length === 0) {
@@ -81,7 +121,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
 
         // Mã đơn
         const tdMa = document.createElement("td");
-        tdMa.innerHTML = `<a href="/ban-hang/don-hang/${encodeURIComponent(don.ma_don)}"><strong>${don.ma_don}</strong></a>`;
+        tdMa.innerHTML = `<a href="/ban-hang/don-hang/${encodeURIComponent(don.ma_don)}"><strong>${Api.html(don.ma_don)}</strong></a>`;
 
         // Ngày lập
         const tdNgay = document.createElement("td");
@@ -91,7 +131,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
         const tdKh = document.createElement("td");
         if (don.ten_kh) {
           const vipBadge = don.hang_kh === "VIP" ? ` <span class="badge success" style="font-size: .75rem;">VIP</span>` : "";
-          tdKh.innerHTML = `<strong>${don.ten_kh}</strong>${vipBadge}<br><small class="muted">${don.sdt_kh || don.ma_kh || ""}</small>`;
+          tdKh.innerHTML = `<strong>${Api.html(don.ten_kh)}</strong>${vipBadge}<br><small class="muted">${Api.html(don.sdt_kh || don.ma_kh || "")}</small>`;
         } else {
           tdKh.innerHTML = `<span class="muted">Khách vãng lai</span>`;
         }
@@ -144,7 +184,8 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
         bangDonHang.append(tr);
       }
     } catch (err) {
-      bangDonHang.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi tải đơn hàng: ${err.thong_bao || err.message}</td></tr>`;
+      if(request.signal.aborted || err.name==="AbortError")return;
+      bangDonHang.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi tải đơn hàng: ${Api.html(err.thong_bao || err.message)}</td></tr>`;
     }
   }
 
@@ -224,10 +265,12 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
   };
 
   async function taiDanhSachKhach(tuKhoa = "") {
+    const request=batDauTai("khach");
     bangKhachHang.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--muted); padding: 1.5rem;">Đang tải dữ liệu khách hàng...</td></tr>`;
     try {
       const url = tuKhoa ? `/api/ban-hang/khach-hang?tu_khoa=${encodeURIComponent(tuKhoa)}` : `/api/ban-hang/khach-hang`;
-      const ds = await Api.get(url);
+      const ds = await Api.get(url,{signal:request.signal});
+      if(request.signal.aborted)return;
       bangKhachHang.replaceChildren();
 
       if (!ds || ds.length === 0) {
@@ -240,11 +283,11 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
 
         // Mã KH
         const tdMa = document.createElement("td");
-        tdMa.innerHTML = `<strong>${kh.ma_kh}</strong>`;
+        tdMa.innerHTML = `<strong>${Api.html(kh.ma_kh)}</strong>`;
 
         // Họ tên
         const tdTen = document.createElement("td");
-        tdTen.innerHTML = `<strong>${kh.ho_ten}</strong>`;
+        tdTen.innerHTML = `<strong>${Api.html(kh.ho_ten)}</strong>`;
 
         // SĐT
         const tdSdt = document.createElement("td");
@@ -291,7 +334,8 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
         bangKhachHang.append(tr);
       }
     } catch (err) {
-      bangKhachHang.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi tải khách hàng: ${err.thong_bao || err.message}</td></tr>`;
+      if(request.signal.aborted || err.name==="AbortError")return;
+      bangKhachHang.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi tải khách hàng: ${Api.html(err.thong_bao || err.message)}</td></tr>`;
     }
   }
 
@@ -315,7 +359,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
       for (const d of ds) {
         const tr = document.createElement("tr");
         const tdMa = document.createElement("td");
-        tdMa.innerHTML = `<strong>${d.ma_don}</strong>`;
+        tdMa.innerHTML = `<strong>${Api.html(d.ma_don)}</strong>`;
 
         const tdNgay = document.createElement("td");
         tdNgay.textContent = d.ngay_lap;
@@ -341,7 +385,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
         bangLichSuKh.append(tr);
       }
     } catch (err) {
-      bangLichSuKh.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--loi); padding: 1rem;">Lỗi: ${err.thong_bao || err.message}</td></tr>`;
+      bangLichSuKh.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--loi); padding: 1rem;">Lỗi: ${Api.html(err.thong_bao || err.message)}</td></tr>`;
     }
   }
 
@@ -368,12 +412,35 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
     await Promise.all([taiThongKeDoanhThu(), taiThongKeSanPham()]);
   }
 
+  function veBieuDoDoanhThu(rows) {
+    const root=document.querySelector("[data-revenue-chart]");
+    if(!root)return;
+    root.replaceChildren();
+    const recent=(rows || []).slice(0,7).reverse();
+    if(!recent.length){const p=document.createElement("p");p.className="empty";p.textContent="Biểu đồ sẽ hiển thị khi có đơn đã thanh toán.";root.append(p);return;}
+    const max=Math.max(1,...recent.map(row=>Number(row.doanh_thu)||0));
+    for(const row of recent){
+      const amount=Number(row.doanh_thu)||0;
+      const column=document.createElement("div");column.className="revenue-column";
+      const value=document.createElement("strong");value.textContent=Api.tien(amount);
+      const track=document.createElement("div");track.className="revenue-track";
+      const bar=document.createElement("span");bar.className="revenue-bar";bar.style.height=(amount/max*100)+"%";
+      const label=document.createElement("span");label.textContent=row.thoi_gian;label.className="revenue-label";
+      column.setAttribute("aria-label",row.thoi_gian+": "+Api.tien(amount));column.append(value,track,label);track.append(bar);root.append(column);
+    }
+  }
+
   async function taiThongKeDoanhThu() {
+    const request=batDauTai("doanh-thu");
     cotThoiGian.textContent = kieuThongKeDoanhThu === "nam" ? "Năm" : (kieuThongKeDoanhThu === "thang" ? "Tháng (YYYY-MM)" : "Ngày (YYYY-MM-DD)");
+    const chart=document.querySelector("[data-revenue-chart]");
+    if(chart)chart.textContent="Đang tải biểu đồ…";
     bangDoanhThu.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--muted); padding: 1.5rem;">Đang tải dữ liệu...</td></tr>`;
 
     try {
-      const ds = await Api.get(`/api/ban-hang/thong-ke/doanh-thu?kieu=${kieuThongKeDoanhThu}`);
+      const ds = await Api.get(`/api/ban-hang/thong-ke/doanh-thu?kieu=${kieuThongKeDoanhThu}`,{signal:request.signal});
+      if(request.signal.aborted)return;
+      veBieuDoDoanhThu(ds);
       bangDoanhThu.replaceChildren();
 
       if (!ds || ds.length === 0) {
@@ -393,7 +460,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
         const tr = document.createElement("tr");
 
         const tdTime = document.createElement("td");
-        tdTime.innerHTML = `<strong>${row.thoi_gian}</strong>`;
+        tdTime.innerHTML = `<strong>${Api.html(row.thoi_gian)}</strong>`;
 
         const tdSoDon = document.createElement("td");
         tdSoDon.className = "so";
@@ -419,14 +486,17 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
       tongDonEl.textContent = tongDon;
       tongGiamEl.textContent = Api.tien(tongGiam);
     } catch (err) {
-      bangDoanhThu.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi: ${err.thong_bao || err.message}</td></tr>`;
+      if(request.signal.aborted || err.name==="AbortError")return;
+      bangDoanhThu.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi: ${Api.html(err.thong_bao || err.message)}</td></tr>`;
     }
   }
 
   async function taiThongKeSanPham() {
+    const request=batDauTai("san-pham");
     bangSanpham.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--muted); padding: 1.5rem;">Đang tải thống kê sản phẩm...</td></tr>`;
     try {
-      const ds = await Api.get("/api/ban-hang/thong-ke/san-pham");
+      const ds = await Api.get("/api/ban-hang/thong-ke/san-pham",{signal:request.signal});
+      if(request.signal.aborted)return;
       bangSanpham.replaceChildren();
 
       if (!ds || ds.length === 0) {
@@ -443,17 +513,17 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
         tdHang.innerHTML = `<span class="badge ${topClass}" style="font-weight: 700;">#${idx + 1}</span>`;
 
         const tdMa = document.createElement("td");
-        tdMa.innerHTML = `<strong>${sp.ma_sp}</strong>`;
+        tdMa.innerHTML = `<strong>${Api.html(sp.ma_sp)}</strong>`;
 
         const tdTen = document.createElement("td");
-        tdTen.innerHTML = `<strong>${sp.ten_sp}</strong>`;
+        tdTen.innerHTML = `<strong>${Api.html(sp.ten_sp)}</strong>`;
 
         const tdDvt = document.createElement("td");
         tdDvt.textContent = sp.don_vi_tinh;
 
         const tdSl = document.createElement("td");
         tdSl.className = "so";
-        tdSl.innerHTML = `<strong style="font-size: 1.05rem;">${sp.tong_so_luong}</strong> ${sp.don_vi_tinh}`;
+        tdSl.innerHTML = `<strong style="font-size: 1.05rem;">${sp.tong_so_luong}</strong> ${Api.html(sp.don_vi_tinh)}`;
 
         const tdDt = document.createElement("td");
         tdDt.className = "so";
@@ -463,7 +533,8 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
         bangSanpham.append(tr);
       });
     } catch (err) {
-      bangSanpham.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi: ${err.thong_bao || err.message}</td></tr>`;
+      if(request.signal.aborted || err.name==="AbortError")return;
+      bangSanpham.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi: ${Api.html(err.thong_bao || err.message)}</td></tr>`;
     }
   }
 
@@ -484,11 +555,13 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
   };
 
   async function taiTraCuuKho(tuKhoa = "") {
+    const request=batDauTai("kho");
     bangTraCuuKho.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--muted); padding: 1.5rem;">Đang tải danh sách hàng trong kho...</td></tr>`;
     if (thoiGianKhoSync) thoiGianKhoSync.textContent = "Đang đồng bộ...";
     try {
       const url = tuKhoa ? `/api/ban-hang/tra-cuu-kho?tu_khoa=${encodeURIComponent(tuKhoa)}` : `/api/ban-hang/tra-cuu-kho`;
-      const ds = await Api.get(url);
+      const ds = await Api.get(url,{signal:request.signal});
+      if(request.signal.aborted)return;
       bangTraCuuKho.replaceChildren();
 
       const now = new Date();
@@ -506,10 +579,10 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
         const tr = document.createElement("tr");
 
         const tdMa = document.createElement("td");
-        tdMa.innerHTML = `<strong>${sp.ma_sp}</strong>`;
+        tdMa.innerHTML = `<strong>${Api.html(sp.ma_sp)}</strong>`;
 
         const tdTen = document.createElement("td");
-        tdTen.innerHTML = `<strong>${sp.ten_sp}</strong>`;
+        tdTen.innerHTML = `<strong>${Api.html(sp.ten_sp)}</strong>`;
 
         const tdDm = document.createElement("td");
         tdDm.textContent = sp.danh_muc || "-";
@@ -526,7 +599,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
         tdTon.innerHTML = `<strong style="font-size: 1.05rem; color: ${sp.so_kha_dung > 0 ? "var(--accent)" : "var(--loi)"};">${sp.so_kha_dung}</strong>`;
 
         const tdNcc = document.createElement("td");
-        tdNcc.textContent = sp.nha_cung_cap || "Nhà cung cấp An Phú";
+        tdNcc.textContent = sp.nha_cung_cap || "Chưa ghi nhận";
 
         const tdTt = document.createElement("td");
         tdTt.style.textAlign = "center";
@@ -545,7 +618,8 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
         btnLapDon.className = "secondary";
         btnLapDon.style.padding = ".25rem .6rem";
         btnLapDon.style.fontSize = ".82rem";
-        btnLapDon.textContent = "+ Chọn mua";
+        btnLapDon.textContent = "Lập đơn";
+        btnLapDon.disabled = sp.so_kha_dung <= 0 || !sp.co_the_ban;
         btnLapDon.onclick = () => {
           sessionStorage.setItem("chon_san_pham_ma", sp.ma_sp);
           location.href = "/ban-hang/don-hang/moi";
@@ -556,7 +630,8 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
         bangTraCuuKho.append(tr);
       }
     } catch (err) {
-      bangTraCuuKho.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi tải kho: ${err.thong_bao || err.message}</td></tr>`;
+      if(request.signal.aborted || err.name==="AbortError")return;
+      bangTraCuuKho.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi tải kho: ${Api.html(err.thong_bao || err.message)}</td></tr>`;
     }
   }
-});
+}).catch(error=>Api.hienLoiPhien(error));

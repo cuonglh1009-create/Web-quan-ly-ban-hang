@@ -56,12 +56,51 @@ function lotStatus(row) {
   return ["Còn khả dụng", "success", "con_hang"];
 }
 
+function tongHopTon(lots) {
+  const totals = new Map();
+  for (const lot of lots) {
+    const total = totals.get(lot.ma_sp) || {actual:0, reserved:0, available:0};
+    total.actual += lot.ton_thuc_te;
+    total.reserved += lot.dang_giu;
+    total.available += lot.kha_dung;
+    totals.set(lot.ma_sp, total);
+  }
+  return totals;
+}
+
+function hienTonTheoSanPham(lots) {
+  const tbody = document.querySelector("[data-stock-overview]");
+  if (!tbody) return;
+  const totals = tongHopTon(lots);
+  tbody.replaceChildren();
+  const rows = [...products.values()].sort((a,b) => a.ten_sp.localeCompare(b.ten_sp,"vi"));
+  for (const product of rows.slice(0,8)) {
+    const total = totals.get(product.ma_sp) || {actual:0,reserved:0,available:0};
+    const tr = tbody.insertRow();
+    const title = cell(tr, product.ten_sp);
+    const code = title.appendChild(document.createElement("small"));
+    code.className = "subline"; code.textContent = product.ma_sp + " · " + product.don_vi_tinh;
+    cell(tr, number.format(total.actual), "numeric");
+    cell(tr, number.format(total.reserved), "numeric");
+    const available = cell(tr, number.format(total.available), "numeric stock-available");
+    const unit = available.appendChild(document.createElement("small"));
+    unit.className="subline"; unit.textContent=product.don_vi_tinh;
+    const link = cell(tr,"").appendChild(document.createElement("a"));
+    link.href = "/kho/lo-hang?" + new URLSearchParams({ma_sp:product.ma_sp});
+    link.textContent = "Xem lô"; link.className="text-link";
+  }
+  if (!rows.length) cell(tbody.insertRow(),"Chưa có sản phẩm được ghi nhận.","empty").colSpan=5;
+}
+
 async function dashboard(section) {
   const [lots, alerts] = await Promise.all([goiApi(api + "/lo-hang"), goiApi(api + "/canh-bao")]);
   section.querySelector("[data-lots]").textContent = number.format(lots.length);
-  section.querySelector("[data-available]").textContent = number.format(lots.reduce((sum, p) => sum+p.kha_dung, 0));
+  section.querySelector("[data-available]").textContent = number.format([...tongHopTon(lots).values()].filter(p => p.available > 0).length);
   section.querySelector("[data-low]").textContent = number.format(alerts.ton_thap.length);
   section.querySelector("[data-expiring]").textContent = number.format(alerts.sap_het_han.length);
+  hienTonTheoSanPham(lots);
+  section.setAttribute("aria-busy","false");
+  document.querySelector("[data-dashboard-updated]").textContent = "Cập nhật lúc " + new Date().toLocaleTimeString("vi-VN");
   const preview = document.querySelector("[data-alert-preview]");
   preview.replaceChildren();
   for (const warning of [...alerts.ton_thap.slice(0,2), ...alerts.sap_het_han.slice(0,2)]) {
@@ -69,7 +108,10 @@ async function dashboard(section) {
     item.className = "alert-preview";
     item.append(badge(warning.ma_lo ? "Sắp hết hạn" : "Tồn thấp", warning.ma_lo ? "danger" : "pending"));
     const title = item.appendChild(document.createElement("strong"));
-    title.textContent = warning.ma_lo || warning.ma_sp;
+    title.textContent = (products.get(warning.ma_sp)?.ten_sp || warning.ma_sp) + (warning.ma_lo ? " · " + warning.ma_lo : "");
+    const action = item.appendChild(document.createElement("a"));
+    action.className = "text-link"; action.textContent = "Kiểm tra lô liên quan";
+    action.href = "/kho/lo-hang?" + new URLSearchParams(warning.ma_lo ? {ma_lo:warning.ma_lo}:{ma_sp:warning.ma_sp});
     const text = item.appendChild(document.createElement("p"));
     text.textContent = warning.noi_dung;
   }
@@ -154,6 +196,7 @@ async function chiTietPhieu(section) {
     section.querySelector("[data-total]").textContent = money(receipt.dong.reduce((sum,p)=>sum+p.gia_nhap*p.so_luong_nhap,0));
     confirm.hidden = completed;
     section.querySelector("[data-details]").hidden = false;
+    document.querySelector("[data-print]").disabled = false;
   }
   try { show(await goiApi(path)); }
   finally { section.querySelector("[data-loading]").hidden = true; }
@@ -177,6 +220,11 @@ async function danhSachLo(section) {
   form.elements.q.value = params.get("q") || params.get("ma_lo") || params.get("ma_sp") || "";
   form.elements.tinh_trang.value = params.get("tinh_trang") || "";
   const lots = await goiApi(api + "/lo-hang");
+  const searchIndex = new Map(lots.map(item => [item.ma_lo, normalize(
+    [item.ma_lo,item.ma_sp,products.get(item.ma_sp)?.ten_sp,catalog.nha_cung_cap_theo_lo?.[item.ma_lo]].join(" ")
+  )]));
+  const exactProduct = params.get("ma_sp");
+  const exactLot = params.get("ma_lo");
   let page = 1;
   let result = [];
   const perPage = 10;
@@ -213,17 +261,22 @@ async function danhSachLo(section) {
     const term = normalize(form.elements.q.value);
     const status = form.elements.tinh_trang.value;
     result = lots.filter(item => {
-      const text = [item.ma_lo,item.ma_sp,products.get(item.ma_sp)?.ten_sp,catalog.nha_cung_cap_theo_lo?.[item.ma_lo]].join(" ");
-      return normalize(text).includes(term) && (!status || lotStatus(item)[2]===status);
+      const matches = exactProduct && term === normalize(exactProduct) ? item.ma_sp === exactProduct :
+        exactLot && term === normalize(exactLot) ? item.ma_lo === exactLot : searchIndex.get(item.ma_lo).includes(term);
+      return matches && (!status || lotStatus(item)[2]===status);
     });
     page = 1;
     const query = new URLSearchParams();
-    if (form.elements.q.value.trim()) query.set("q",form.elements.q.value.trim());
+    if (exactProduct && term === normalize(exactProduct)) query.set("ma_sp",exactProduct);
+    else if (exactLot && term === normalize(exactLot)) query.set("ma_lo",exactLot);
+    else if (form.elements.q.value.trim()) query.set("q",form.elements.q.value.trim());
     if (status) query.set("tinh_trang",status);
     history.replaceState(null,"",location.pathname+(query.size ? "?"+query : ""));
     render();
   }
   form.addEventListener("submit",event=>{event.preventDefault();filter();});
+  form.elements.q.addEventListener("input",filter);
+  form.elements.tinh_trang.addEventListener("change",filter);
   form.addEventListener("reset",()=>setTimeout(filter,0));
   section.querySelector("[data-prev]").addEventListener("click",()=>{page--;render();});
   section.querySelector("[data-next]").addEventListener("click",()=>{page++;render();});
@@ -255,14 +308,16 @@ async function danhSachCanhBao(section) {
   }
 }
 
-function danhSachSanPham(section) {
+async function danhSachSanPham(section) {
   const search = section.querySelector("[data-product-search]");
   const status = section.querySelector("[data-product-status]");
+  const category = section.querySelector("[data-product-category]");
   const rows = [...section.querySelectorAll("[data-product-row]")];
   function filter() {
     let count = 0;
     for (const row of rows) {
       row.hidden = !normalize(row.dataset.search).includes(normalize(search.value))
+        || Boolean(category.value && category.value !== row.dataset.category)
         || Boolean(status.value && status.value !== row.dataset.status);
       if (!row.hidden) count++;
     }
@@ -271,12 +326,20 @@ function danhSachSanPham(section) {
   }
   search.addEventListener("input",filter);
   status.addEventListener("change",filter);
+  category.addEventListener("change",filter);
   filter();
+  const totals = tongHopTon(await goiApi(api + "/lo-hang"));
+  for (const row of rows) row.querySelector("[data-product-available]").textContent = number.format(totals.get(row.dataset.code)?.available || 0);
 }
 
-document.querySelector("[data-toggle-menu]")?.addEventListener("click",event=>{
-  const open = document.querySelector(".shell").classList.toggle("menu-open");
-  event.currentTarget.setAttribute("aria-expanded",String(open));
+document.querySelector("[data-dashboard-refresh]")?.addEventListener("click",async event=>{
+  const button = event.currentTarget;
+  if(button.disabled) return;
+  button.disabled=true; button.textContent="Đang cập nhật…";
+  hienLoi(null);
+  try { await dashboard(document.querySelector("[data-dashboard]")); }
+  catch(error){hienLoi(error);}
+  finally {button.disabled=false;button.textContent="Làm mới số liệu";}
 });
 document.querySelector("[data-print]")?.addEventListener("click",()=>window.print());
 
