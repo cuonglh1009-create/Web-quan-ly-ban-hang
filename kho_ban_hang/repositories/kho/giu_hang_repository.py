@@ -7,10 +7,8 @@ class GiuHangRepository:
         self.lo_hang_repo = lo_hang_repo
 
     def tim_theo_don(self, ma_don: str) -> list[GiuHang]:
-        rows = self.ket_noi_db.execute(
-            "SELECT ma_lo, so_luong FROM giu_hang WHERE ma_don = ? ORDER BY ma_lo", (ma_don,)
-        )
-        return [GiuHang(ma_don, self.lo_hang_repo.tim_theo_ma(row["ma_lo"]), row["so_luong"]) for row in rows]
+        return [GiuHang(ma_don, lo, so_luong)
+                for lo, so_luong in self.lo_hang_repo.tim_dang_giu(ma_don)]
 
     def tong_dang_giu(self, ma_lo: str) -> int:
         return self.ket_noi_db.execute(

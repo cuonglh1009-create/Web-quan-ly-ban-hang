@@ -24,24 +24,24 @@ class LoHangRepository:
                ORDER BY ma_lo""",
             (ma_lo, ma_lo, ma_sp, ma_sp),
         )
-        return [self._tao(row) for row in ds]
+        return self._tao_nhieu(ds.fetchall())
 
     def tim_con_ton(self) -> list[LoHang]:
-        return [self._tao(row) for row in self.ket_noi_db.execute(
+        return self._tao_nhieu(self.ket_noi_db.execute(
             "SELECT * FROM lo_hang WHERE so_luong_con_lai > 0 ORDER BY han_su_dung, ma_lo"
-        )]
+        ).fetchall())
 
-    def tim_voi_so_dang_giu(self, ma_lo: str | None, ma_sp: str | None) -> list[tuple[LoHang, int]]:
+    def tim_voi_so_dang_giu(self, ma_lo: str | None, ma_sp: str | None, uu_tien_xuat: bool = False) -> list[tuple[LoHang, int]]:
         rows = self.ket_noi_db.execute(
             """SELECT lo.*, COALESCE((
                    SELECT SUM(giu.so_luong) FROM giu_hang AS giu WHERE giu.ma_lo = lo.ma_lo
                ), 0) AS dang_giu
                FROM lo_hang AS lo
                WHERE (? IS NULL OR lo.ma_lo = ?) AND (? IS NULL OR lo.ma_sp = ?)
-               ORDER BY lo.ma_lo""",
+               ORDER BY """ + ("lo.han_su_dung IS NULL, lo.han_su_dung, lo.ngay_nhap, lo.ma_lo" if uu_tien_xuat else "lo.ma_lo"),
             (ma_lo, ma_lo, ma_sp, ma_sp),
         ).fetchall()
-        return [(self._tao(row), row["dang_giu"]) for row in rows]
+        return list(zip(self._tao_nhieu(rows), (row["dang_giu"] for row in rows)))
 
     def ton_tai_ma_lo(self, ma_lo: str) -> bool:
         return self.ket_noi_db.execute("SELECT 1 FROM lo_hang WHERE ma_lo=?", (ma_lo,)).fetchone() is not None
@@ -60,9 +60,21 @@ class LoHangRepository:
             (lo.so_luong_con_lai, lo.ma_lo),
         )
 
-    def _tao(self, row):
+    def tim_dang_giu(self, ma_don: str):
+        rows = self.ket_noi_db.execute(
+            """SELECT lo.*, giu.so_luong AS so_giu FROM giu_hang giu
+               JOIN lo_hang lo ON lo.ma_lo = giu.ma_lo
+               WHERE giu.ma_don = ? ORDER BY lo.ma_lo""", (ma_don,)
+        ).fetchall()
+        return list(zip(self._tao_nhieu(rows), (row["so_giu"] for row in rows)))
+
+    def _tao_nhieu(self, rows):
+        san_pham = self.san_pham_repo.tim_nhieu(row["ma_sp"] for row in rows)
+        return [self._tao(row, san_pham[row["ma_sp"]]) for row in rows]
+
+    def _tao(self, row, san_pham):
         return LoHang(
-            row["ma_lo"], self.san_pham_repo.tim_theo_ma(row["ma_sp"]), date.fromisoformat(row["ngay_nhap"]),
+            row["ma_lo"], san_pham, date.fromisoformat(row["ngay_nhap"]),
             date.fromisoformat(row["ngay_san_xuat"]) if row["ngay_san_xuat"] else None,
             date.fromisoformat(row["han_su_dung"]) if row["han_su_dung"] else None,
             row["so_luong_con_lai"], row["gia_nhap"],

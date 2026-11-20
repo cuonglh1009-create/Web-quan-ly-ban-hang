@@ -31,10 +31,13 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
 
   // Tự động nhận diện tab dựa trên đường dẫn URL
   const p = location.pathname;
-  if (p.includes("khach-hang")) chuyenTab("khach-hang");
-  else if (p.includes("thong-ke")) chuyenTab("thong-ke");
-  else if (p.includes("tra-cuu-kho")) chuyenTab("tra-cuu-kho");
-  else chuyenTab("don-hang");
+  // Chờ các biến bảng và bộ lọc được khởi tạo xong trước khi tải tab.
+  queueMicrotask(() => {
+    if (p.includes("khach-hang")) chuyenTab("khach-hang");
+    else if (p.includes("thong-ke")) chuyenTab("thong-ke");
+    else if (p.includes("tra-cuu-kho")) chuyenTab("tra-cuu-kho");
+    else chuyenTab("don-hang");
+  });
 
   // ================= TAB 1: ĐƠN ĐÃ BÁN =================
   let locTrangThaiDon = "";

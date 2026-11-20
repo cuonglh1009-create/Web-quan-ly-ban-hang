@@ -37,14 +37,10 @@ class KhoService(IKho):
         if type(so_luong) is not int or so_luong <= 0:
             raise DuLieuKhongHopLeError("Số lượng giữ phải là số nguyên dương.")
         self.san_pham_repo.tim_theo_ma(ma_sp)
-        cac_lo = sorted(
-            self.lo_hang_repo.tim_theo_san_pham(ma_sp),
-            key=lambda lo: (lo.han_su_dung is None, lo.han_su_dung or date.max, lo.ngay_nhap, lo.ma_lo),
-        )
+        cac_lo = self.lo_hang_repo.tim_voi_so_dang_giu(None, ma_sp, uu_tien_xuat=True)
         phan_bo = []
         con_thieu = so_luong
-        for lo in cac_lo:
-            dang_giu = self.giu_hang_repo.tong_dang_giu(lo.ma_lo)
+        for lo, dang_giu in cac_lo:
             lay = min(self._kha_dung(lo, dang_giu, ngay), con_thieu)
             if lay > 0:
                 phan_bo.append((lo, lay))

@@ -1,47 +1,32 @@
 <!doctype html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="csrf-token" content="{{ csrf_token() }}">   <!-- trang Kho của TV1 đọc CSRF từ đây -->
-  <title>{% block title %}Kho &amp; Bán hàng{% endblock %}</title>
-  {% if request.blueprint == 'kho' %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='kho/kho.css') }}">
-    <script type="module" src="{{ url_for('static', filename='kho/kho.js') }}"></script>
-  {% else %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='chung/chung.css') }}">
-  {% endif %}
-  {% block css %}{% endblock %}
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token() }}"><meta name="color-scheme" content="light">
+<title>{% block title %}Kho &amp; Bán hàng{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='chung/chung.css') }}">
+{% block css %}{% endblock %}
+<link rel="stylesheet" href="{{ url_for('static', filename='chung/workspace.css') }}">
+<script src="{{ url_for('static', filename='chung/workspace.js') }}" defer></script>
 </head>
 <body>
-  {% set trang_kho = request.blueprint == 'kho' %}
-  {% if trang_kho %}
-  <a class="skip" href="#main">Đến nội dung</a>
-  <div class="shell">
-    <aside class="sidebar">
-      <a class="brand" href="{{ url_for('kho.index') }}"><span class="brand-mark" aria-hidden="true">K</span> Quản lý kho</a>
-      <nav aria-label="Phân hệ Kho">
-        {% for endpoint, label in [('kho.index', 'Tổng quan'), ('kho.phieu_nhap_moi', 'Lập phiếu nhập'), ('kho.lo_hang', 'Lô hàng'), ('kho.canh_bao', 'Cảnh báo tồn kho')] %}
-          <a href="{{ url_for(endpoint) }}"{% if request.endpoint == endpoint %} aria-current="page"{% endif %}>{{ label }}</a>
-        {% endfor %}
-      </nav>
-      <div class="profile">
-        <strong id="nguoi-dung">{{ nhan_vien.ho_ten }}</strong>
-        <button id="nut-dang-xuat" class="quiet" type="button" hidden>Đăng xuất</button>
-      </div>
-    </aside>
-  {% else %}
-  <header class="thanh-tren">
-    <a class="brand" href="{{ url_for('ban_hang.trang_chu') if request.blueprint == 'ban_hang' else url_for('xac_thuc.trang_goc') }}"><span class="brand-mark" aria-hidden="true">{{ 'B' if request.blueprint == 'ban_hang' else 'K' }}</span> {{ 'Quản lý bán hàng' if request.blueprint == 'ban_hang' else 'Kho &amp; Bán hàng' }}</a>
-    <nav id="menu" aria-label="Menu chính"></nav>   <!-- phien.js dựng theo vai trò -->
-    <span id="nguoi-dung"></span>
-    <button id="nut-dang-xuat" type="button" hidden>Đăng xuất</button>
-  </header>
-  {% endif %}
-  <main id="main"{% if trang_kho %} class="main"{% endif %}>{% block content %}{% endblock %}</main>
-  {% if trang_kho %}</div>{% endif %}
-  <script src="{{ url_for('static', filename='chung/phien.js') }}"></script>
-  {% if trang_kho %}<script>Api.khoiTao({ batBuoc: "NV_KHO" });</script>{% endif %}
-  {% block js %}{% endblock %}
-</body>
-</html>
+<a class="skip" href="#main">Đến nội dung</a>
+<div class="shell">
+<aside class="sidebar" id="sales-navigation">
+<a class="brand" href="/ban-hang"><span>Kho &amp; Bán hàng<small>Quản lý hoạt động cửa hàng</small></span></a>
+<div class="nav-caption">BÁN HÀNG</div>
+<nav id="menu" aria-label="Menu chính"></nav>
+<div class="sidebar-bottom">Đơn hàng · Khách hàng · Doanh thu</div>
+</aside>
+<div class="workspace">
+<header class="topbar">
+<button class="mobile-menu secondary" type="button" data-workspace-menu aria-controls="sales-navigation" aria-expanded="false">Menu</button>
+<span class="topbar-title">Không gian làm việc <span>/</span> Bán hàng</span>
+<div class="account"><span><strong id="nguoi-dung"></strong><small>Nhân viên bán hàng</small></span><button id="nut-dang-xuat" class="quiet" type="button" hidden>Đăng xuất</button></div>
+</header>
+<main id="main" class="main">{% block content %}{% endblock %}</main>
+<footer class="page-footer">Kho &amp; Bán hàng <span>Quản lý công việc mỗi ngày</span></footer>
+</div></div>
+<script src="{{ url_for('static', filename='chung/phien.js') }}"></script>
+{% block js %}{% endblock %}
+</body></html>
