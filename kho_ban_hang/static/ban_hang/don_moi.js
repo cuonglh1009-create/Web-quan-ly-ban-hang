@@ -7,15 +7,25 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
         maDonEl = document.getElementById("ma-don-du-kien"),
         maKhTuDongEl = document.getElementById("ma-kh-tu-dong"),
         tenNhanVienEl = document.getElementById("ten-nhan-vien"),
+        nutBatThemKh = document.getElementById("nut-bat-them-kh"),
+        khoiThemKhachNhanh = document.getElementById("khoi-them-khach-nhanh"),
+        nutDongThemNhanh = document.getElementById("nut-dong-them-nhanh"),
+        nutHuyThemNhanh = document.getElementById("nut-huy-them-nhanh"),
+        nutLuuKhachNhanh = document.getElementById("nut-luu-khach-nhanh"),
+        tenKhMoiInput = document.getElementById("ten-kh-moi"),
+        sdtKhMoiInput = document.getElementById("sdt-kh-moi"),
+        diaChiKhMoiInput = document.getElementById("dia-chi-kh-moi"),
         chonKhachCuSelect = document.getElementById("chon-khach-cu"),
         nhapTimKhachInput = document.getElementById("nhap-tim-khach"),
         hopGoiYKhach = document.getElementById("hop-goi-y-khach"),
         danhSachGoiYKhach = document.getElementById("danh-sach-goi-y-khach"),
+        dongTaoNhanhTuGoiY = document.getElementById("dong-tao-nhanh-tu-goi-y"),
         thongTinKhEl = document.getElementById("thong-tin-kh-da-chon"),
         tenKhHienThi = document.getElementById("ten-kh-hien-thi"),
         maKhHienThi = document.getElementById("ma-kh-hien-thi"),
         sdtKhHienThi = document.getElementById("sdt-kh-hien-thi"),
         hangKhHienThi = document.getElementById("hang-kh-hien-thi"),
+        khChietKhauBadge = document.getElementById("kh-chiet-khau-badge"),
         nutBoChonKh = document.getElementById("nut-bo-chon-kh"),
         canhBaoTrungKhach = document.getElementById("canh-bao-trung-khach"),
         noiDungTrungKhach = document.getElementById("noi-dung-trung-khach"),
@@ -108,7 +118,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
 
   nutLamMoiKho.onclick = () => dongBoDuLieuKho(true);
 
-  // 2. Cập nhật giao diện chọn / nhập khách hàng (Tự động gợi ý nếu trùng)
+  // 2. Giao diện chọn & tìm kiếm khách hàng
   function capNhatDropdownKhachHang(danhSach) {
     chonKhachCuSelect.replaceChildren();
     const optMacDinh = document.createElement("option");
@@ -153,35 +163,42 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
       (k.ho_ten && k.ho_ten.toLowerCase().includes(tuKhoa))
     );
 
+    danhSachGoiYKhach.replaceChildren();
     if (ketQua.length === 0) {
-      hopGoiYKhach.hidden = true;
-      return;
+      const emptyMsg = document.createElement("div");
+      emptyMsg.style.cssText = "padding: .6rem .75rem; color: var(--muted); font-size: .85rem;";
+      emptyMsg.textContent = `Không tìm thấy khách hàng nào khớp với "${nhapTimKhachInput.value.trim()}".`;
+      danhSachGoiYKhach.append(emptyMsg);
+    } else {
+      for (const k of ketQua) {
+        const item = document.createElement("div");
+        item.style.cssText = "padding: .5rem .75rem; border-bottom: 1px solid #edf2ee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background .15s;";
+        item.onmouseover = () => item.style.background = "#edf5ee";
+        item.onmouseout = () => item.style.background = "#fff";
+
+        const laVip = k.hang === "VIP";
+        item.innerHTML = `
+          <div>
+            <strong>${k.ho_ten}</strong> (<span style="color: var(--accent); font-weight: 600;">${k.ma_kh}</span>)
+            <span style="color: var(--muted); margin-left: .4rem; font-size: .85rem;">SĐT: ${k.so_dien_thoai || "Chưa có"}</span>
+          </div>
+          <div>
+            <span class="badge ${laVip ? "success" : ""}" style="font-size: .8rem;">${laVip ? "VIP ⭐ (Giảm 10%)" : "THƯỜNG"}</span>
+          </div>
+        `;
+
+        item.onclick = () => {
+          chonKhach(k);
+          hopGoiYKhach.hidden = true;
+          nhapTimKhachInput.value = `${k.ho_ten} (${k.ma_kh})`;
+        };
+        danhSachGoiYKhach.append(item);
+      }
     }
 
-    danhSachGoiYKhach.replaceChildren();
-    for (const k of ketQua) {
-      const item = document.createElement("div");
-      item.style.cssText = "padding: .5rem .75rem; border-bottom: 1px solid #edf2ee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background .15s;";
-      item.onmouseover = () => item.style.background = "#edf5ee";
-      item.onmouseout = () => item.style.background = "#fff";
-
-      const laVip = k.hang === "VIP";
-      item.innerHTML = `
-        <div>
-          <strong>${k.ho_ten}</strong> (<span style="color: var(--accent); font-weight: 600;">${k.ma_kh}</span>)
-          <span style="color: var(--muted); margin-left: .4rem; font-size: .85rem;">SĐT: ${k.so_dien_thoai || "Chưa có"}</span>
-        </div>
-        <div>
-          <span class="badge ${laVip ? "success" : ""}" style="font-size: .8rem;">${laVip ? "VIP ⭐ (Giảm 10%)" : "THƯỜNG"}</span>
-        </div>
-      `;
-
-      item.onclick = () => {
-        chonKhach(k);
-        hopGoiYKhach.hidden = true;
-        nhapTimKhachInput.value = `${k.ho_ten} (${k.ma_kh})`;
-      };
-      danhSachGoiYKhach.append(item);
+    if (dongTaoNhanhTuGoiY) {
+      dongTaoNhanhTuGoiY.textContent = `➕ Thêm khách hàng mới với "${nhapTimKhachInput.value.trim()}"`;
+      dongTaoNhanhTuGoiY.hidden = false;
     }
     hopGoiYKhach.hidden = false;
   });
@@ -199,9 +216,14 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
     tenKhHienThi.textContent = kh.ho_ten;
     maKhHienThi.textContent = kh.ma_kh;
     sdtKhHienThi.textContent = kh.so_dien_thoai || "(Chưa có)";
-    hangKhHienThi.textContent = kh.hang === "VIP" ? "VIP ⭐ (Giảm 10%)" : "THƯỜNG";
-    hangKhHienThi.className = "badge " + (kh.hang === "VIP" ? "success" : "");
+    const laVip = kh.hang === "VIP";
+    hangKhHienThi.textContent = laVip ? "VIP ⭐ (Giảm 10%)" : "THƯỜNG";
+    hangKhHienThi.className = "badge " + (laVip ? "success" : "");
+    if (khChietKhauBadge) {
+      khChietKhauBadge.textContent = laVip ? "⭐ VIP Giảm 10%" : "";
+    }
     thongTinKhEl.hidden = false;
+    dongThemKhachNhanh();
     xoaLoi();
     tinhTien();
   }
@@ -217,11 +239,57 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
 
   nutBoChonKh.onclick = boChonKhach;
 
+  // 3. Khối thêm khách hàng mới nhanh tích hợp trực tiếp
+  function moThemKhachNhanh(thongTinNhap = "") {
+    khoiThemKhachNhanh.hidden = false;
+    const chuoi = (thongTinNhap || "").trim();
+    if (chuoi) {
+      const soDienThoaiRe = /^[0-9+.\s-]{6,}$/;
+      if (soDienThoaiRe.test(chuoi)) {
+        sdtKhMoiInput.value = chuoi;
+        tenKhMoiInput.value = "";
+        tenKhMoiInput.focus();
+      } else {
+        tenKhMoiInput.value = chuoi;
+        sdtKhMoiInput.value = "";
+        sdtKhMoiInput.focus();
+      }
+    } else {
+      tenKhMoiInput.focus();
+    }
+    kiemTraTrungKhachMoi();
+  }
+
+  function dongThemKhachNhanh() {
+    khoiThemKhachNhanh.hidden = true;
+    canhBaoTrungKhach.hidden = true;
+  }
+
+  if (nutBatThemKh) {
+    nutBatThemKh.onclick = () => {
+      if (khoiThemKhachNhanh.hidden) {
+        moThemKhachNhanh(nhapTimKhachInput.value.trim());
+      } else {
+        dongThemKhachNhanh();
+      }
+    };
+  }
+
+  if (nutDongThemNhanh) nutDongThemNhanh.onclick = dongThemKhachNhanh;
+  if (nutHuyThemNhanh) nutHuyThemNhanh.onclick = dongThemKhachNhanh;
+
+  if (dongTaoNhanhTuGoiY) {
+    dongTaoNhanhTuGoiY.onclick = () => {
+      hopGoiYKhach.hidden = true;
+      moThemKhachNhanh(nhapTimKhachInput.value.trim());
+    };
+  }
+
   // Phát hiện và gợi ý nếu khách hàng mới trùng SĐT hoặc Họ tên với khách đã có
   let khachTrungPhatHien = null;
   function kiemTraTrungKhachMoi() {
-    const sdt = form.so_dien_thoai.value.trim().replace(/\s+/g, "");
-    const ten = form.ten_kh.value.trim().toLowerCase();
+    const sdt = sdtKhMoiInput.value.trim().replace(/\s+/g, "");
+    const ten = tenKhMoiInput.value.trim().toLowerCase();
 
     khachTrungPhatHien = null;
     if (sdt.length >= 8) {
@@ -248,42 +316,74 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
     }
   }
 
-  form.so_dien_thoai.addEventListener("input", kiemTraTrungKhachMoi);
-  form.ten_kh.addEventListener("input", kiemTraTrungKhachMoi);
+  sdtKhMoiInput.addEventListener("input", kiemTraTrungKhachMoi);
+  tenKhMoiInput.addEventListener("input", kiemTraTrungKhachMoi);
 
   nutDungKhachTrung.onclick = () => {
     if (khachTrungPhatHien) {
-      form.loai_khach.value = "cu";
-      khoiKhachCu.hidden = false;
-      khoiKhachMoi.hidden = true;
       chonKhach(khachTrungPhatHien);
       nhapTimKhachInput.value = `${khachTrungPhatHien.ho_ten} (${khachTrungPhatHien.ma_kh})`;
-      canhBaoTrungKhach.hidden = true;
+      dongThemKhachNhanh();
     }
   };
 
-  // Xử lý radio chuyển loại khách (Chỉ có 'cu' và 'moi')
-  const radioLoaiKhach = form.querySelectorAll("input[name=loai_khach]");
-  const khoiKhachCu = document.getElementById("khoi-khach-cu");
-  const khoiKhachMoi = document.getElementById("khoi-khach-moi");
+  if (nutLuuKhachNhanh) {
+    nutLuuKhachNhanh.onclick = async () => {
+      xoaLoi();
+      const ho_ten = tenKhMoiInput.value.trim();
+      const so_dien_thoai = sdtKhMoiInput.value.trim();
+      const dia_chi = diaChiKhMoiInput.value.trim();
+      const ma_kh = maKhTuDongEl.value.trim() || undefined;
 
-  radioLoaiKhach.forEach((r) => {
-    r.addEventListener("change", () => {
-      const val = form.loai_khach.value;
-      if (val === "cu") {
-        khoiKhachCu.hidden = false;
-        khoiKhachMoi.hidden = true;
-      } else {
-        khoiKhachCu.hidden = true;
-        khoiKhachMoi.hidden = false;
-        boChonKhach();
-        canhBaoTrungKhach.hidden = true;
+      let coLoi = false;
+      if (!ho_ten) {
+        hienLoi({ truong: "ten_kh", thong_bao: "Vui lòng nhập họ tên khách hàng" });
+        coLoi = true;
       }
-      tinhTien();
-    });
-  });
+      if (!so_dien_thoai) {
+        hienLoi({ truong: "so_dien_thoai", thong_bao: "Vui lòng nhập số điện thoại khách hàng" });
+        coLoi = true;
+      }
+      if (coLoi) return;
 
-  // 3. Cập nhật giao diện chọn sản phẩm dạng <select> (CHỌN TRỰC TIẾP, KHÔNG PHẢI ĐIỀN)
+      nutLuuKhachNhanh.disabled = true;
+      try {
+        const res = await Api.post("/api/ban-hang/khach-hang", {
+          ma_kh,
+          ho_ten,
+          so_dien_thoai,
+          dia_chi
+        });
+        const khMoi = {
+          ma_kh: res.ma_kh || ma_kh,
+          ho_ten,
+          so_dien_thoai,
+          dia_chi,
+          hang: "THUONG",
+          tong_chi_tieu: 0
+        };
+        danhSachKhach.unshift(khMoi);
+        capNhatDropdownKhachHang(danhSachKhach);
+        chonKhach(khMoi);
+        nhapTimKhachInput.value = `${khMoi.ho_ten} (${khMoi.ma_kh})`;
+
+        tenKhMoiInput.value = "";
+        sdtKhMoiInput.value = "";
+        diaChiKhMoiInput.value = "";
+        dongThemKhachNhanh();
+
+        Api.get("/api/ban-hang/ma-khoi-tao").then((m) => {
+          if (m && m.ma_kh_du_kien) maKhTuDongEl.value = m.ma_kh_du_kien;
+        });
+      } catch (err) {
+        hienLoi(err);
+      } finally {
+        nutLuuKhachNhanh.disabled = false;
+      }
+    };
+  }
+
+  // 4. Giao diện chọn sản phẩm dạng <select> (CHỌN TRỰC TIẾP, KHÔNG PHẢI ĐIỀN)
   function capNhatDropdownSanPham(danhSach) {
     const giaTriHienTai = chonSpSelect.value;
     chonSpSelect.replaceChildren();
@@ -429,7 +529,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
     }
   };
 
-  // 4. Render bảng danh sách sản phẩm trong đơn
+  // 5. Render bảng danh sách sản phẩm trong đơn
   function capNhatBang() {
     tbody.replaceChildren();
     if (cacDongHang.length === 0) {
@@ -538,7 +638,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
     tinhTien();
   }
 
-  // 5. Tính toán tiền và chiết khấu VIP 10%
+  // 6. Tính toán tiền và chiết khấu VIP 10%
   function tinhTien() {
     const tamTinh = cacDongHang.reduce((sum, d) => sum + d.don_gia * d.so_luong, 0);
     tamTinhEl.textContent = Api.tien(tamTinh);
@@ -572,7 +672,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
     }
   }
 
-  // 6. Gửi lập đơn
+  // 7. Gửi lập đơn
   form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     xoaLoi();
@@ -584,32 +684,23 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
       return;
     }
 
-    const loaiKhach = form.loai_khach.value;
     let ma_kh = null;
     let ten_kh = null;
     let sdt_kh = null;
     let dia_chi_kh = null;
 
-    if (loaiKhach === "cu") {
-      if (!khachChon) {
-        hienLoi({ truong: "ma_kh", thong_bao: "Vui lòng chọn hoặc nhập khách hàng từ hệ thống." });
-        return;
-      }
+    if (khachChon) {
       ma_kh = khachChon.ma_kh;
-    } else if (loaiKhach === "moi") {
-      ten_kh = form.ten_kh.value.trim();
-      sdt_kh = form.so_dien_thoai.value.trim();
-      dia_chi_kh = form.dia_chi.value.trim();
-      ma_kh = form.ma_kh_moi.value.trim() || null;
-
-      if (!ten_kh) {
-        hienLoi({ truong: "ten_kh", thong_bao: "Vui lòng nhập họ tên khách hàng" });
-        return;
-      }
-      if (!sdt_kh) {
-        hienLoi({ truong: "so_dien_thoai", thong_bao: "Vui lòng nhập số điện thoại" });
-        return;
-      }
+    } else if (tenKhMoiInput && tenKhMoiInput.value.trim() && sdtKhMoiInput && sdtKhMoiInput.value.trim()) {
+      ten_kh = tenKhMoiInput.value.trim();
+      sdt_kh = sdtKhMoiInput.value.trim();
+      dia_chi_kh = diaChiKhMoiInput ? diaChiKhMoiInput.value.trim() : null;
+      ma_kh = maKhTuDongEl ? maKhTuDongEl.value.trim() : null;
+    } else {
+      loi.textContent = "Vui lòng chọn khách hàng có sẵn hoặc thêm thông tin khách hàng mới cho đơn này.";
+      loi.hidden = false;
+      nhapTimKhachInput.focus();
+      return;
     }
 
     const payload = {

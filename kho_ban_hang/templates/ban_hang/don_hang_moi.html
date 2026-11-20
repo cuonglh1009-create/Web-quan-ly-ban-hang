@@ -25,25 +25,22 @@
       </label>
     </div>
 
-    <!-- Chọn hoặc thêm khách hàng (Không dùng khách vãng lai, cho phép nhập hoặc chọn, gợi ý khi trùng) -->
-    <div style="margin-top: 1rem; padding: 1rem; background: #fbfcfb; border: 1px solid var(--line); border-radius: .5rem;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .8rem; flex-wrap: wrap; gap: .5rem;">
+    <!-- 1. Tích hợp Thông tin Khách hàng (Nhập, Chọn hoặc Thêm mới nhanh ngay tại chỗ) -->
+    <div style="margin-top: 1rem; padding: 1.1rem; background: #fbfcfb; border: 1px solid var(--line); border-radius: .5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .85rem; flex-wrap: wrap; gap: .5rem;">
         <div>
-          <span style="font-weight: 700; font-size: .95rem;">Thông tin khách hàng:</span>
-          <p class="muted" style="font-size: .82rem; margin-top: .15rem;">Có thể chọn từ danh sách hoặc nhập tên/SĐT để tìm nhanh. Hệ thống tự động gợi ý nếu trùng thông tin.</p>
+          <span style="font-weight: 700; font-size: .95rem; color: var(--ink);">Khách hàng mua hàng:</span>
+          <p class="muted" style="font-size: .82rem; margin-top: .15rem;">Chọn khách có sẵn, nhập tìm nhanh theo Tên/SĐT hoặc bấm thêm khách mới ngay tại đây</p>
         </div>
-        <div style="display: flex; gap: 1rem; font-size: .9rem;">
-          <label style="display: flex; align-items: center; gap: .35rem; cursor: pointer;">
-            <input type="radio" name="loai_khach" value="cu" checked style="width: auto; min-height: auto;"> Khách hàng đã có
-          </label>
-          <label style="display: flex; align-items: center; gap: .35rem; cursor: pointer;">
-            <input type="radio" name="loai_khach" value="moi" style="width: auto; min-height: auto;"> Thêm khách hàng mới
-          </label>
+        <div>
+          <button type="button" id="nut-bat-them-kh" class="secondary" style="padding: .35rem .75rem; font-size: .85rem; font-weight: 600; color: var(--accent); border-color: var(--accent);">
+            + Thêm khách hàng mới
+          </button>
         </div>
       </div>
 
-      <!-- Khối khách hàng đã có: vừa có thể CHỌN bằng dropdown, vừa có thể NHẬP để tìm kiếm -->
-      <div id="khoi-khach-cu">
+      <!-- Khu vực chọn & tìm kiếm khách hàng -->
+      <div id="khu-vuc-chon-kh">
         <div class="field-grid">
           <label>
             Chọn từ danh sách khách hàng
@@ -53,21 +50,24 @@
             <span class="loi-truong" data-loi-truong="ma_kh"></span>
           </label>
           <label>
-            Hoặc nhập Tên / Số điện thoại / Mã KH
+            Hoặc nhập Tên / Số điện thoại / Mã KH để tìm
             <input id="nhap-tim-khach" placeholder="Gõ tên, SĐT hoặc mã để tìm nhanh..." autocomplete="off">
           </label>
         </div>
 
-        <!-- Hộp gợi ý khi người dùng nhập trùng hoặc khớp thông tin khách hàng -->
-        <div id="hop-goi-y-khach" style="margin-top: .6rem; border: 1px solid var(--accent); border-radius: .4rem; background: #fff; max-height: 220px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,.08);" hidden>
+        <!-- Hộp danh sách gợi ý khi gõ tìm kiếm -->
+        <div id="hop-goi-y-khach" style="margin-top: .6rem; border: 1px solid var(--accent); border-radius: .4rem; background: #fff; max-height: 230px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,.08);" hidden>
           <div style="padding: .4rem .7rem; background: #eef5ef; font-size: .82rem; font-weight: 600; color: var(--accent); border-bottom: 1px solid #d4e7d8;">
             Khách hàng phù hợp trong hệ thống (Bấm để chọn):
           </div>
           <div id="danh-sach-goi-y-khach"></div>
+          <div id="dong-tao-nhanh-tu-goi-y" style="padding: .5rem .75rem; background: #fafbf9; border-top: 1px dashed var(--line); font-size: .85rem; cursor: pointer; color: var(--accent); font-weight: 600;" hidden>
+            ➕ Thêm khách hàng mới với thông tin vừa nhập
+          </div>
         </div>
 
-        <!-- Thẻ hiển thị khách hàng đã được chọn -->
-        <div id="thong-tin-kh-da-chon" hidden style="margin-top: .75rem; padding: .7rem .9rem; background: #edf5ee; border: 1px solid #c8decb; border-radius: .45rem; font-size: .92rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem;">
+        <!-- Thẻ hiển thị khách hàng đã chọn -->
+        <div id="thong-tin-kh-da-chon" hidden style="margin-top: .75rem; padding: .75rem .95rem; background: #edf5ee; border: 1px solid #c8decb; border-radius: .45rem; font-size: .92rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem;">
           <div>
             Khách hàng: <strong id="ten-kh-hien-thi"></strong> (<span id="ma-kh-hien-thi"></span>) - SĐT: <strong id="sdt-kh-hien-thi"></strong>
             - Hạng: <span id="hang-kh-hien-thi" class="badge"></span>
@@ -77,11 +77,15 @@
         </div>
       </div>
 
-      <!-- Khối thêm khách hàng mới (tự động phát hiện và gợi ý nếu nhập trùng thông tin) -->
-      <div id="khoi-khach-moi" hidden>
+      <!-- Khối thêm khách hàng mới tích hợp trực tiếp (ẩn/hiện tiện lợi) -->
+      <div id="khoi-them-khach-nhanh" style="margin-top: .85rem; padding: .95rem; background: #fff; border: 1.5px solid var(--accent); border-radius: .45rem;" hidden>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .75rem;">
+          <strong style="color: var(--accent); font-size: .95rem;">Thêm khách hàng mới vào hệ thống</strong>
+          <button type="button" id="nut-dong-them-nhanh" class="quiet" style="font-size: .85rem; color: var(--muted); cursor: pointer;">✕ Đóng</button>
+        </div>
         <div class="field-grid">
           <label>
-            Mã khách hàng (hệ thống tự động điền)
+            Mã khách hàng (tự động cấp)
             <input id="ma-kh-tu-dong" name="ma_kh_moi" readonly style="background: #eef2ed; font-weight: 600; color: var(--accent);" placeholder="Tự sinh (vd: KH004)">
           </label>
           <label>
@@ -100,7 +104,7 @@
           </label>
         </div>
 
-        <!-- Cảnh báo và gợi ý khi phát hiện trùng thông tin với khách hàng cũ -->
+        <!-- Cảnh báo nếu nhập trùng SĐT hoặc tên với khách cũ -->
         <div id="canh-bao-trung-khach" style="margin-top: .75rem; padding: .65rem .85rem; background: #fff8e6; border: 1px solid #f0d588; border-radius: .4rem; font-size: .9rem; color: #7a5400;" hidden>
           <div style="font-weight: 600; margin-bottom: .25rem;">⚠️ Phát hiện thông tin trùng với khách hàng đã có:</div>
           <div id="noi-dung-trung-khach"></div>
@@ -109,6 +113,11 @@
               👉 Bấm vào đây để chọn khách hàng này
             </button>
           </div>
+        </div>
+
+        <div style="display: flex; gap: .6rem; align-items: center; margin-top: .9rem;">
+          <button type="button" id="nut-luu-khach-nhanh" style="padding: .45rem .85rem; font-size: .88rem;">Lưu &amp; Áp dụng vào đơn</button>
+          <button type="button" id="nut-huy-them-nhanh" class="secondary" style="padding: .45rem .75rem; font-size: .88rem;">Hủy</button>
         </div>
       </div>
     </div>
@@ -191,25 +200,6 @@
           <tr id="dong-trong">
             <td colspan="7" style="text-align: center; color: var(--muted); padding: 1.8rem;">
               Chưa có sản phẩm nào trong đơn. Vui lòng chọn sản phẩm ở ô chọn bên trên và bấm "+ Thêm vào đơn".
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </fieldset>
-            <th style="width: 120px;">Mã SP</th>
-            <th>Tên sản phẩm</th>
-            <th style="width: 80px;">ĐVT</th>
-            <th class="so" style="width: 130px;">Đơn giá kho</th>
-            <th class="so" style="width: 110px;">Số lượng</th>
-            <th class="so" style="width: 140px;">Thành tiền</th>
-            <th style="width: 70px; text-align: center;">Xóa</th>
-          </tr>
-        </thead>
-        <tbody id="dong">
-          <tr id="dong-trong">
-            <td colspan="7" style="text-align: center; color: var(--muted); padding: 1.8rem;">
-              Chưa có sản phẩm nào trong đơn. Vui lòng chọn sản phẩm ở ô gợi ý bên trên và bấm "+ Thêm vào đơn".
             </td>
           </tr>
         </tbody>
