@@ -8,12 +8,18 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
         maKhTuDongEl = document.getElementById("ma-kh-tu-dong"),
         tenNhanVienEl = document.getElementById("ten-nhan-vien"),
         chonKhachCuSelect = document.getElementById("chon-khach-cu"),
+        nhapTimKhachInput = document.getElementById("nhap-tim-khach"),
+        hopGoiYKhach = document.getElementById("hop-goi-y-khach"),
+        danhSachGoiYKhach = document.getElementById("danh-sach-goi-y-khach"),
         thongTinKhEl = document.getElementById("thong-tin-kh-da-chon"),
         tenKhHienThi = document.getElementById("ten-kh-hien-thi"),
         maKhHienThi = document.getElementById("ma-kh-hien-thi"),
         sdtKhHienThi = document.getElementById("sdt-kh-hien-thi"),
         hangKhHienThi = document.getElementById("hang-kh-hien-thi"),
         nutBoChonKh = document.getElementById("nut-bo-chon-kh"),
+        canhBaoTrungKhach = document.getElementById("canh-bao-trung-khach"),
+        noiDungTrungKhach = document.getElementById("noi-dung-trung-khach"),
+        nutDungKhachTrung = document.getElementById("nut-dung-khach-trung"),
         chonSpSelect = document.getElementById("chon-sp-nhanh"),
         soLuongInput = document.getElementById("so-luong-nhanh"),
         nutGiamSl = document.getElementById("nut-giam-sl"),
@@ -102,7 +108,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
 
   nutLamMoiKho.onclick = () => dongBoDuLieuKho(true);
 
-  // 2. Cập nhật giao diện chọn khách hàng dạng <select> (không phải điền)
+  // 2. Cập nhật giao diện chọn / nhập khách hàng (Tự động gợi ý nếu trùng)
   function capNhatDropdownKhachHang(danhSach) {
     chonKhachCuSelect.replaceChildren();
     const optMacDinh = document.createElement("option");
@@ -119,6 +125,7 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
     }
   }
 
+  // Khi chọn từ dropdown <select>
   chonKhachCuSelect.onchange = () => {
     const ma = chonKhachCuSelect.value;
     if (!ma) {
@@ -126,8 +133,65 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
       return;
     }
     const found = danhSachKhach.find((k) => k.ma_kh === ma);
-    if (found) chonKhach(found);
+    if (found) {
+      chonKhach(found);
+      nhapTimKhachInput.value = `${found.ho_ten} (${found.ma_kh})`;
+    }
   };
+
+  // Khi nhập tìm kiếm khách hàng đã có
+  nhapTimKhachInput.addEventListener("input", () => {
+    const tuKhoa = nhapTimKhachInput.value.trim().toLowerCase();
+    if (!tuKhoa) {
+      hopGoiYKhach.hidden = true;
+      return;
+    }
+
+    const ketQua = danhSachKhach.filter((k) =>
+      (k.ma_kh && k.ma_kh.toLowerCase().includes(tuKhoa)) ||
+      (k.so_dien_thoai && k.so_dien_thoai.includes(tuKhoa)) ||
+      (k.ho_ten && k.ho_ten.toLowerCase().includes(tuKhoa))
+    );
+
+    if (ketQua.length === 0) {
+      hopGoiYKhach.hidden = true;
+      return;
+    }
+
+    danhSachGoiYKhach.replaceChildren();
+    for (const k of ketQua) {
+      const item = document.createElement("div");
+      item.style.cssText = "padding: .5rem .75rem; border-bottom: 1px solid #edf2ee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background .15s;";
+      item.onmouseover = () => item.style.background = "#edf5ee";
+      item.onmouseout = () => item.style.background = "#fff";
+
+      const laVip = k.hang === "VIP";
+      item.innerHTML = `
+        <div>
+          <strong>${k.ho_ten}</strong> (<span style="color: var(--accent); font-weight: 600;">${k.ma_kh}</span>)
+          <span style="color: var(--muted); margin-left: .4rem; font-size: .85rem;">SĐT: ${k.so_dien_thoai || "Chưa có"}</span>
+        </div>
+        <div>
+          <span class="badge ${laVip ? "success" : ""}" style="font-size: .8rem;">${laVip ? "VIP ⭐ (Giảm 10%)" : "THƯỜNG"}</span>
+        </div>
+      `;
+
+      item.onclick = () => {
+        chonKhach(k);
+        hopGoiYKhach.hidden = true;
+        nhapTimKhachInput.value = `${k.ho_ten} (${k.ma_kh})`;
+      };
+      danhSachGoiYKhach.append(item);
+    }
+    hopGoiYKhach.hidden = false;
+  });
+
+  // Khi bấm ra ngoài thì ẩn hộp gợi ý
+  document.addEventListener("click", (e) => {
+    if (!hopGoiYKhach.contains(e.target) && e.target !== nhapTimKhachInput) {
+      hopGoiYKhach.hidden = true;
+    }
+  });
 
   function chonKhach(kh) {
     khachChon = kh;
@@ -138,19 +202,67 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
     hangKhHienThi.textContent = kh.hang === "VIP" ? "VIP ⭐ (Giảm 10%)" : "THƯỜNG";
     hangKhHienThi.className = "badge " + (kh.hang === "VIP" ? "success" : "");
     thongTinKhEl.hidden = false;
+    xoaLoi();
     tinhTien();
   }
 
   function boChonKhach() {
     khachChon = null;
     chonKhachCuSelect.value = "";
+    nhapTimKhachInput.value = "";
     thongTinKhEl.hidden = true;
+    hopGoiYKhach.hidden = true;
     tinhTien();
   }
 
   nutBoChonKh.onclick = boChonKhach;
 
-  // Xử lý radio chuyển loại khách
+  // Phát hiện và gợi ý nếu khách hàng mới trùng SĐT hoặc Họ tên với khách đã có
+  let khachTrungPhatHien = null;
+  function kiemTraTrungKhachMoi() {
+    const sdt = form.so_dien_thoai.value.trim().replace(/\s+/g, "");
+    const ten = form.ten_kh.value.trim().toLowerCase();
+
+    khachTrungPhatHien = null;
+    if (sdt.length >= 8) {
+      khachTrungPhatHien = danhSachKhach.find((k) =>
+        k.so_dien_thoai && k.so_dien_thoai.replace(/\s+/g, "") === sdt
+      );
+    }
+    if (!khachTrungPhatHien && ten.length >= 3) {
+      khachTrungPhatHien = danhSachKhach.find((k) =>
+        k.ho_ten && k.ho_ten.trim().toLowerCase() === ten
+      );
+    }
+
+    if (khachTrungPhatHien) {
+      canhBaoTrungKhach.hidden = false;
+      const laVip = khachTrungPhatHien.hang === "VIP";
+      noiDungTrungKhach.innerHTML = `
+        <strong>${khachTrungPhatHien.ho_ten}</strong> (Mã KH: <strong>${khachTrungPhatHien.ma_kh}</strong>)
+        - SĐT: <strong>${khachTrungPhatHien.so_dien_thoai || "(Chưa có)"}</strong>
+        - Hạng: <span class="badge ${laVip ? "success" : ""}">${laVip ? "VIP ⭐ (Giảm 10%)" : "THƯỜNG"}</span>
+      `;
+    } else {
+      canhBaoTrungKhach.hidden = true;
+    }
+  }
+
+  form.so_dien_thoai.addEventListener("input", kiemTraTrungKhachMoi);
+  form.ten_kh.addEventListener("input", kiemTraTrungKhachMoi);
+
+  nutDungKhachTrung.onclick = () => {
+    if (khachTrungPhatHien) {
+      form.loai_khach.value = "cu";
+      khoiKhachCu.hidden = false;
+      khoiKhachMoi.hidden = true;
+      chonKhach(khachTrungPhatHien);
+      nhapTimKhachInput.value = `${khachTrungPhatHien.ho_ten} (${khachTrungPhatHien.ma_kh})`;
+      canhBaoTrungKhach.hidden = true;
+    }
+  };
+
+  // Xử lý radio chuyển loại khách (Chỉ có 'cu' và 'moi')
   const radioLoaiKhach = form.querySelectorAll("input[name=loai_khach]");
   const khoiKhachCu = document.getElementById("khoi-khach-cu");
   const khoiKhachMoi = document.getElementById("khoi-khach-moi");
@@ -161,14 +273,11 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
       if (val === "cu") {
         khoiKhachCu.hidden = false;
         khoiKhachMoi.hidden = true;
-      } else if (val === "moi") {
+      } else {
         khoiKhachCu.hidden = true;
         khoiKhachMoi.hidden = false;
         boChonKhach();
-      } else {
-        khoiKhachCu.hidden = true;
-        khoiKhachMoi.hidden = true;
-        boChonKhach();
+        canhBaoTrungKhach.hidden = true;
       }
       tinhTien();
     });
@@ -482,7 +591,11 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
     let dia_chi_kh = null;
 
     if (loaiKhach === "cu") {
-      ma_kh = khachChon ? khachChon.ma_kh : null;
+      if (!khachChon) {
+        hienLoi({ truong: "ma_kh", thong_bao: "Vui lòng chọn hoặc nhập khách hàng từ hệ thống." });
+        return;
+      }
+      ma_kh = khachChon.ma_kh;
     } else if (loaiKhach === "moi") {
       ten_kh = form.ten_kh.value.trim();
       sdt_kh = form.so_dien_thoai.value.trim();

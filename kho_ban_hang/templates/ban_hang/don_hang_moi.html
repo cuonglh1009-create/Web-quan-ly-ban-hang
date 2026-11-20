@@ -25,62 +25,90 @@
       </label>
     </div>
 
-    <!-- Chọn hoặc thêm khách hàng -->
+    <!-- Chọn hoặc thêm khách hàng (Không dùng khách vãng lai, cho phép nhập hoặc chọn, gợi ý khi trùng) -->
     <div style="margin-top: 1rem; padding: 1rem; background: #fbfcfb; border: 1px solid var(--line); border-radius: .5rem;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .8rem; flex-wrap: wrap; gap: .5rem;">
-        <span style="font-weight: 600;">Thông tin khách hàng:</span>
-        <div style="display: flex; gap: 1rem; font-size: .9rem; flex-wrap: wrap;">
-          <label style="display: flex; align-items: center; gap: .3rem; cursor: pointer;">
+        <div>
+          <span style="font-weight: 700; font-size: .95rem;">Thông tin khách hàng:</span>
+          <p class="muted" style="font-size: .82rem; margin-top: .15rem;">Có thể chọn từ danh sách hoặc nhập tên/SĐT để tìm nhanh. Hệ thống tự động gợi ý nếu trùng thông tin.</p>
+        </div>
+        <div style="display: flex; gap: 1rem; font-size: .9rem;">
+          <label style="display: flex; align-items: center; gap: .35rem; cursor: pointer;">
             <input type="radio" name="loai_khach" value="cu" checked style="width: auto; min-height: auto;"> Khách hàng đã có
           </label>
-          <label style="display: flex; align-items: center; gap: .3rem; cursor: pointer;">
+          <label style="display: flex; align-items: center; gap: .35rem; cursor: pointer;">
             <input type="radio" name="loai_khach" value="moi" style="width: auto; min-height: auto;"> Thêm khách hàng mới
           </label>
-          <label style="display: flex; align-items: center; gap: .3rem; cursor: pointer;">
-            <input type="radio" name="loai_khach" value="vang_lai" style="width: auto; min-height: auto;"> Khách vãng lai
+        </div>
+      </div>
+
+      <!-- Khối khách hàng đã có: vừa có thể CHỌN bằng dropdown, vừa có thể NHẬP để tìm kiếm -->
+      <div id="khoi-khach-cu">
+        <div class="field-grid">
+          <label>
+            Chọn từ danh sách khách hàng
+            <select id="chon-khach-cu">
+              <option value="">-- Bấm vào đây để chọn khách hàng --</option>
+            </select>
+            <span class="loi-truong" data-loi-truong="ma_kh"></span>
+          </label>
+          <label>
+            Hoặc nhập Tên / Số điện thoại / Mã KH
+            <input id="nhap-tim-khach" placeholder="Gõ tên, SĐT hoặc mã để tìm nhanh..." autocomplete="off">
           </label>
         </div>
-      </div>
 
-      <!-- Khối chọn khách hàng cũ -->
-      <div id="khoi-khach-cu">
-        <label>
-          Chọn khách hàng đã có trong hệ thống (Được giảm 10% nếu là VIP)
-          <select id="chon-khach-cu">
-            <option value="">-- Bấm vào đây để chọn khách hàng --</option>
-          </select>
-          <span class="loi-truong" data-loi-truong="ma_kh"></span>
-        </label>
-        <div id="thong-tin-kh-da-chon" hidden style="margin-top: .6rem; padding: .65rem .85rem; background: #edf5ee; border: 1px solid #c8decb; border-radius: .4rem; font-size: .92rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem;">
-          <div>
-            Khách hàng: <strong id="ten-kh-hien-thi"></strong> (<span id="ma-kh-hien-thi"></span>) - SĐT: <span id="sdt-kh-hien-thi"></span>
-            - Hạng: <span id="hang-kh-hien-thi" class="badge"></span>
+        <!-- Hộp gợi ý khi người dùng nhập trùng hoặc khớp thông tin khách hàng -->
+        <div id="hop-goi-y-khach" style="margin-top: .6rem; border: 1px solid var(--accent); border-radius: .4rem; background: #fff; max-height: 220px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,.08);" hidden>
+          <div style="padding: .4rem .7rem; background: #eef5ef; font-size: .82rem; font-weight: 600; color: var(--accent); border-bottom: 1px solid #d4e7d8;">
+            Khách hàng phù hợp trong hệ thống (Bấm để chọn):
           </div>
-          <button type="button" id="nut-bo-chon-kh" class="secondary" style="padding: .25rem .6rem; font-size: .8rem;">Bỏ chọn</button>
+          <div id="danh-sach-goi-y-khach"></div>
+        </div>
+
+        <!-- Thẻ hiển thị khách hàng đã được chọn -->
+        <div id="thong-tin-kh-da-chon" hidden style="margin-top: .75rem; padding: .7rem .9rem; background: #edf5ee; border: 1px solid #c8decb; border-radius: .45rem; font-size: .92rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem;">
+          <div>
+            Khách hàng: <strong id="ten-kh-hien-thi"></strong> (<span id="ma-kh-hien-thi"></span>) - SĐT: <strong id="sdt-kh-hien-thi"></strong>
+            - Hạng: <span id="hang-kh-hien-thi" class="badge"></span>
+            <span id="kh-chiet-khau-badge" style="margin-left: .4rem; color: #185a3c; font-weight: 600; font-size: .85rem;"></span>
+          </div>
+          <button type="button" id="nut-bo-chon-kh" class="secondary" style="padding: .25rem .6rem; font-size: .82rem;">Đổi khách hàng</button>
         </div>
       </div>
 
-      <!-- Khối thêm khách hàng mới -->
+      <!-- Khối thêm khách hàng mới (tự động phát hiện và gợi ý nếu nhập trùng thông tin) -->
       <div id="khoi-khach-moi" hidden>
         <div class="field-grid">
           <label>
-            Mã khách hàng (tự động điền)
+            Mã khách hàng (hệ thống tự động điền)
             <input id="ma-kh-tu-dong" name="ma_kh_moi" readonly style="background: #eef2ed; font-weight: 600; color: var(--accent);" placeholder="Tự sinh (vd: KH004)">
           </label>
           <label>
             Họ tên khách hàng <span style="color: var(--loi)">*</span>
-            <input id="ten-kh-moi" name="ten_kh" placeholder="Ví dụ: Nguyễn Văn Nam">
+            <input id="ten-kh-moi" name="ten_kh" placeholder="Ví dụ: Nguyễn Văn Nam" autocomplete="off">
             <span class="loi-truong" data-loi-truong="ten_kh"></span>
           </label>
           <label>
             Số điện thoại <span style="color: var(--loi)">*</span>
-            <input id="sdt-kh-moi" name="so_dien_thoai" placeholder="Ví dụ: 0912345678">
+            <input id="sdt-kh-moi" name="so_dien_thoai" placeholder="Ví dụ: 0912345678" autocomplete="off">
             <span class="loi-truong" data-loi-truong="so_dien_thoai"></span>
           </label>
           <label>
             Địa chỉ (tùy chọn)
             <input id="dia-chi-kh-moi" name="dia_chi" placeholder="Ví dụ: Hà Nội">
           </label>
+        </div>
+
+        <!-- Cảnh báo và gợi ý khi phát hiện trùng thông tin với khách hàng cũ -->
+        <div id="canh-bao-trung-khach" style="margin-top: .75rem; padding: .65rem .85rem; background: #fff8e6; border: 1px solid #f0d588; border-radius: .4rem; font-size: .9rem; color: #7a5400;" hidden>
+          <div style="font-weight: 600; margin-bottom: .25rem;">⚠️ Phát hiện thông tin trùng với khách hàng đã có:</div>
+          <div id="noi-dung-trung-khach"></div>
+          <div style="margin-top: .4rem;">
+            <button type="button" id="nut-dung-khach-trung" class="secondary" style="padding: .25rem .6rem; font-size: .82rem; font-weight: 600; background: #fff;">
+              👉 Bấm vào đây để chọn khách hàng này
+            </button>
+          </div>
         </div>
       </div>
     </div>
