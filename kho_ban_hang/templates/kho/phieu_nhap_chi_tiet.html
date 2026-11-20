@@ -3,6 +3,7 @@
 {% block content %}
 <a class="breadcrumb" href="{{ url_for('kho.danh_sach_phieu') }}">← Phiếu nhập</a>
 <header class="page-head"><div><h1>Chi tiết phiếu nhập</h1><p class="mono muted">{{ ma_phieu }}</p></div><button type="button" class="button secondary" data-print disabled>In phiếu</button></header>
+<ol class="workflow-steps" aria-label="Quy trình nhập kho"><li>Nhập thông tin</li><li aria-current="step" data-review-step>Kiểm tra phiếu</li><li data-confirm-step>Xác nhận tồn kho</li></ol>
 <p class="notice" data-error hidden role="alert"></p>
 <section class="panel" data-receipt="{{ ma_phieu }}">
   <p data-loading aria-live="polite">Đang tải phiếu…</p>

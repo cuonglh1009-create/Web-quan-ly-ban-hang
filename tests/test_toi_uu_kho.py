@@ -149,5 +149,69 @@ class ToiUuKhoTest(unittest.TestCase):
         ).fetchone()[0], 2)
 
 
+    def test_doc_ton_ban_hang_khong_truy_van_tung_san_pham(self):
+        from kho_ban_hang.container import Container
+        from kho_ban_hang.services.ban_hang.xac_thuc_service import BoDemThuDangNhap
+        self.conn.executemany(
+            """INSERT INTO san_pham
+               SELECT ?,ten_sp,gia_niem_yet,don_vi_tinh,trang_thai,ma_dm,loai,thuoc_tinh
+               FROM san_pham WHERE ma_sp='SP02'""",
+            [(f"BATCH-{i:03}",) for i in range(100)],
+        )
+        container = Container(self.cfg, BoDemThuDangNhap(5, 900))
+        self.addCleanup(container.dong)
+        service = container.ban_hang
+        for read in [service.lay_san_pham_goi_y, service.tra_cuu_kho]:
+            queries = []
+            container.ket_noi.set_trace_callback(queries.append)
+            try:
+                result = read()
+            finally:
+                container.ket_noi.set_trace_callback(None)
+            self.assertEqual(len(result), 104)
+            self.assertLessEqual(sum(q.lstrip().upper().startswith("SELECT") for q in queries), 5)
+            for product in result[:4]:
+                self.assertEqual(product["so_kha_dung"], self.kho.lay_so_luong_kha_dung(product["ma_sp"]))
+
+    def test_nha_cung_cap_chi_lay_tu_phieu_xac_nhan(self):
+        from kho_ban_hang.container import Container
+        from kho_ban_hang.services.ban_hang.xac_thuc_service import BoDemThuDangNhap
+        from kho_ban_hang.contracts.kho_dto import PhieuNhapDTO, DongNhapDTO
+        container = Container(self.cfg, BoDemThuDangNhap(5, 900))
+        self.addCleanup(container.dong)
+        service = container.ban_hang
+        initial = {p["ma_sp"]: p for p in service.tra_cuu_kho()}
+        self.assertEqual(initial["SP02"]["nha_cung_cap"], "Chưa ghi nhận")
+        nv = container.nhan_vien_repo.tim_theo_ma("NV001")
+        receipt = container.thanh_phan_kho.nhap_kho.lap_phieu(
+            PhieuNhapDTO("NCC01", date.today(), [DongNhapDTO("SP02", "SUPPLIER-TEST", 1, 100)]), nv,
+        )
+        self.assertEqual({p["ma_sp"]: p for p in service.tra_cuu_kho()}["SP02"]["nha_cung_cap"], "Chưa ghi nhận")
+        container.thanh_phan_kho.nhap_kho.xac_nhan_phieu(receipt.ma_phieu, date.today())
+        self.assertEqual({p["ma_sp"]: p for p in service.tra_cuu_kho()}["SP02"]["nha_cung_cap"], "Nhà cung cấp An Phú")
+
+    def test_lich_su_don_cho_thanh_toan_va_du_lieu_khach(self):
+        app = create_app(self.cfg)
+        client = app.test_client()
+        csrf = client.get("/api/xac-thuc/phien").json["du_lieu"]["csrf_token"]
+        login = client.post("/api/xac-thuc/dang-nhap", json={
+            "ten_dang_nhap": "nv_ban_hang", "mat_khau": "test-only-pass",
+        }, headers={"X-CSRF-Token": csrf})
+        self.assertEqual(login.status_code, 200)
+        headers = {"X-CSRF-Token": login.json["du_lieu"]["csrf_token"]}
+        bad = client.post("/api/ban-hang/khach-hang", json={"ho_ten": 123}, headers=headers)
+        self.assertEqual(bad.status_code, 400)
+        self.assertEqual(bad.json["loi"]["truong"], "ho_ten")
+        order = client.post("/api/ban-hang/don-hang", json={
+            "ma_kh": "KH001", "dong": [{"ma_sp": "SP02", "so_luong": 1}],
+        }, headers=headers)
+        self.assertEqual(order.status_code, 201)
+        history = client.get("/api/ban-hang/khach-hang/KH001/don-hang")
+        self.assertEqual(history.status_code, 200)
+        item = next(row for row in history.json["du_lieu"] if row["ma_don"] == order.json["du_lieu"]["ma_don"])
+        self.assertEqual(item["tong_thanh_toan"], 230_000)
+        self.assertEqual(item["trang_thai"], "CHO_THANH_TOAN")
+
+
 if __name__ == "__main__":
     unittest.main()

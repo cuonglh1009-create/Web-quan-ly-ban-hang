@@ -8,7 +8,7 @@
   <a class="panel metric" href="{{ url_for('kho.lo_hang') }}"><span class="metric-label">Lô hàng đã ghi nhận</span><strong data-lots>…</strong><span class="metric-foot">Bao gồm các lô đã hết tồn</span></a>
   <a class="panel metric" href="{{ url_for('kho.san_pham') }}"><span class="metric-label">Mặt hàng có thể bán</span><strong data-available>…</strong><span class="metric-foot">Đếm sản phẩm có tồn khả dụng</span></a>
   <a class="panel metric metric-warning" href="{{ url_for('kho.canh_bao') }}#ton-thap"><span class="metric-label">Sản phẩm tồn thấp</span><strong data-low>…</strong><span class="metric-foot">Ưu tiên kiểm tra để nhập thêm</span></a>
-  <a class="panel metric metric-danger" href="{{ url_for('kho.canh_bao') }}#sap-het-han"><span class="metric-label">Lô sắp hết hạn</span><strong data-expiring>…</strong><span class="metric-foot">Kiểm tra trước khi xuất hàng</span></a>
+  <a class="panel metric" href="{{ url_for('kho.lo_hang', tinh_trang='dang_giu') }}"><span class="metric-label">Lô đang giữ cho đơn</span><strong data-reserved-lots>…</strong><span class="metric-foot">Xem hàng dành cho đơn chờ thanh toán</span></a>
 </section>
 <div class="dashboard-grid">
   <div class="dashboard-primary">
@@ -17,7 +17,7 @@
     <div class="table-footer"><span data-dashboard-updated role="status">Đang cập nhật…</span><span>Khả dụng đã loại hàng hết hạn và hàng đang giữ.</span></div></section>
     <section class="panel table-panel"><div class="section-head"><div><h2>Phiếu nhập gần đây</h2><p class="muted">Mở phiếu để xem chi tiết hoặc xác nhận.</p></div><a class="text-link" href="{{ url_for('kho.danh_sach_phieu') }}">Xem tất cả</a></div>{% include "kho/_phieu_table.html" %}</section>
   </div>
-  <section class="panel attention"><div class="section-head"><div><h2>Việc cần xử lý</h2><p class="muted">Cảnh báo từ dữ liệu kho hiện tại</p></div></div><div data-alert-preview><p class="muted">Đang tải cảnh báo…</p></div><a class="button secondary full-width" href="{{ url_for('kho.canh_bao') }}">Xem các cảnh báo</a><div class="stock-legend"><strong>Đọc số liệu kho</strong><p>Thực tế: số lượng còn trong kho.</p><p>Đang giữ: hàng dành cho đơn chờ thanh toán.</p><p>Khả dụng: hàng còn có thể bán.</p></div></section>
+  <section class="panel attention"><div class="section-head"><div><h2>Theo dõi hàng hóa</h2><p class="muted">Tình trạng tồn và hạn dùng</p></div></div><div data-alert-preview><p class="muted">Đang tải cảnh báo…</p></div><a class="button secondary full-width" href="{{ url_for('kho.canh_bao') }}">Xem chi tiết tồn và hạn dùng</a><div class="stock-legend"><strong>Đọc số liệu kho</strong><p>Thực tế: số lượng còn trong kho.</p><p>Đang giữ: hàng dành cho đơn chờ thanh toán.</p><p>Khả dụng: hàng còn có thể bán.</p></div></section>
 </div>
 <script type="application/json" id="du-lieu-kho">{{ danh_muc|tojson }}</script>
 {% endblock %}

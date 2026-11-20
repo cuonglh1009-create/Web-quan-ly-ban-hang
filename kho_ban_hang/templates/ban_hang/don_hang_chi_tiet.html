@@ -3,68 +3,25 @@
 {% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='ban_hang/ban_hang.css') }}">{% endblock %}
 {% block content %}
 <div id="trang" data-ma-don="{{ ma_don }}">
-  <header class="page-head">
-    <div>
-      <h1>Đơn <span id="ma-don"></span> <span id="trang-thai"></span></h1>
-      <p id="khach-hang-info" class="muted" style="margin-top: .25rem;" hidden>
-        Khách hàng: <strong id="ten-kh"></strong> (<span id="ma-kh"></span>) <span id="badge-vip" class="badge success" hidden>VIP - Giảm 10%</span>
-      </p>
-    </div>
-    <a class="button secondary" href="/ban-hang/don-hang">Danh sách đơn hàng</a>
-  </header>
-  <p id="loi" class="loi" role="alert" hidden></p>
-  <section class="hop" id="tong-hop" hidden>
-    <h2>Tổng hợp thanh toán</h2>
-    <table class="bang-tong">
-      <tr><th>Tạm tính</th><td class="so" id="tam-tinh"></td></tr>
-      <tr><th>Giảm theo hạng khách</th><td class="so" id="giam-khach"></td></tr>
-      <tr><th>Giảm khuyến mại</th><td class="so" id="giam-km"></td></tr>
-      <tr class="hang-noi-bat"><th>Số phải trả</th><td class="so"><strong id="phai-tra"></strong></td></tr>
-    </table>
-  </section>
-
-  <!-- Chỉ hiện theo trạng thái đơn (do don_chi_tiet.js bật/tắt) -->
-  <section class="hop" id="khu-km" hidden>
-    <h2>Mã khuyến mại</h2>
-    <form id="form-km" novalidate class="inline-form">
-      <label>Mã khuyến mại <input name="ma_km" placeholder="Ví dụ: GIAM10" autocomplete="off"><span class="loi-truong" data-loi-truong="ma_km"></span></label>
-      <button type="submit">Áp dụng</button>
-    </form>
-  </section>
-
-  <section class="hop" id="khu-thanh-toan" hidden>
-    <h2>Thanh toán</h2>
-    <form id="form-tt" novalidate>
-      <label>Phương thức
-        <select name="phuong_thuc">
-          <option value="TIEN_MAT">Tiền mặt</option>
-          <option value="CHUYEN_KHOAN">Chuyển khoản</option>
-        </select></label>
-      <div id="nhom-tien-mat">
-        <label>Tiền khách đưa (đồng) <input name="tien_khach_dua" inputmode="numeric" placeholder="Ví dụ: 500000">
-          <span class="loi-truong" data-loi-truong="thong_tin.tien_khach_dua"></span></label>
-      </div>
-      <p id="du-kien-tien-thoi" class="muted" role="status" hidden></p>
-      <div id="nhom-chuyen-khoan" hidden>
-        <div class="field-grid">
-          <label>Số tiền đối soát <input name="so_tien_doi_soat" inputmode="numeric" placeholder="Nhập số tiền">
-            <span class="loi-truong" data-loi-truong="thong_tin.so_tien_doi_soat"></span></label>
-          <label>Ngân hàng <input name="ten_ngan_hang" placeholder="Ví dụ: Vietcombank">
-            <span class="loi-truong" data-loi-truong="thong_tin.ten_ngan_hang"></span></label>
-        </div>
-        <label>Mã giao dịch ngân hàng <input name="ma_giao_dich_ngan_hang" placeholder="Ví dụ: MB12345678">
-          <span class="loi-truong" data-loi-truong="thong_tin.ma_giao_dich_ngan_hang"></span></label>
-      </div>
-      <div style="margin-top: 1rem;">
-        <button type="submit">Thanh toán và xuất hóa đơn</button>
-      </div>
-    </form>
-  </section>
-
-  <div class="hang-nut">
-    <a id="lien-ket-hoa-don" class="button" href="#" hidden>Xem hóa đơn</a>
-    <button type="button" id="nut-huy" class="nguy-hiem" hidden>Hủy đơn</button>
-  </div>
+<header class="page-head"><div><p class="page-eyebrow">KIỂM TRA &amp; THANH TOÁN</p><h1>Đơn <span id="ma-don">{{ ma_don }}</span></h1><p class="muted"><span id="trang-thai"></span></p><p id="khach-hang-info" class="muted" hidden>Khách hàng: <strong id="ten-kh"></strong> <span id="ma-kh"></span> <span id="badge-vip" class="badge success" hidden>VIP</span></p></div><a class="button secondary" href="/ban-hang/don-hang">Danh sách đơn hàng</a></header>
+<p id="loi" class="loi" role="alert" hidden></p>
+<div class="checkout-layout">
+<div>
+<section class="hop" id="chi-tiet-don" hidden><div class="section-head"><div><h2>Sản phẩm trong đơn</h2><p class="muted">Kiểm tra số lượng và đơn giá trước khi thu tiền.</p></div></div><div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th class="so">Số lượng</th><th class="so">Đơn giá</th><th class="so">Thành tiền</th></tr></thead><tbody id="chi-tiet-don-body"></tbody></table></div></section>
+<section class="hop" id="khu-km" hidden><details><summary class="form-summary">Thêm mã khuyến mại</summary><form id="form-km" novalidate class="inline-form"><label>Mã khuyến mại<input name="ma_km" placeholder="Nhập mã, ví dụ GIAM10" autocomplete="off"><span class="loi-truong" data-loi-truong="ma_km"></span></label><button type="submit">Áp dụng</button></form></details></section>
+<div class="hang-nut"><a id="lien-ket-hoa-don" class="button" href="#" hidden>Xem hóa đơn</a><button type="button" id="nut-huy" class="nguy-hiem" hidden>Hủy đơn</button></div>
 </div>
+<aside class="checkout-summary">
+<section class="hop" id="tong-hop" hidden><h2>Tổng thanh toán</h2><table class="bang-tong"><tr><th>Tiền hàng</th><td class="so" id="tam-tinh"></td></tr><tr><th>Chiết khấu khách hàng</th><td class="so" id="giam-khach"></td></tr><tr><th>Giảm khuyến mại</th><td class="so" id="giam-km"></td></tr><tr class="hang-noi-bat"><th>Cần thu</th><td class="so"><strong id="phai-tra"></strong></td></tr></table></section>
+<section class="hop" id="khu-thanh-toan" hidden><div class="section-head"><h2>Thu tiền khách</h2></div>
+<form id="form-tt" novalidate>
+<label>Phương thức thanh toán<select name="phuong_thuc"><option value="TIEN_MAT">Tiền mặt</option><option value="CHUYEN_KHOAN">Chuyển khoản</option></select></label>
+<div id="nhom-tien-mat" class="payment-fields"><label>Tiền khách đưa (đồng)<input name="tien_khach_dua" inputmode="numeric" data-money placeholder="Ví dụ: 500.000" autocomplete="off"><span class="loi-truong" data-loi-truong="thong_tin.tien_khach_dua"></span></label><div class="cash-presets" aria-label="Điền nhanh tiền khách đưa"><button class="secondary" type="button" data-cash="exact">Vừa đủ</button><button class="secondary" type="button" data-cash="round">Làm tròn</button><button class="secondary" type="button" data-cash="higher">Mệnh giá lớn hơn</button></div></div>
+<p id="du-kien-tien-thoi" class="payment-change" role="status" hidden></p>
+<div id="nhom-chuyen-khoan" class="payment-fields" hidden><p class="muted">Điền thông tin giao dịch đã kiểm tra.</p><label>Số tiền nhận được (đồng)<input name="so_tien_doi_soat" inputmode="numeric" data-money placeholder="Tự điền theo số cần thu"><span class="loi-truong" data-loi-truong="thong_tin.so_tien_doi_soat"></span></label><label>Ngân hàng<input name="ten_ngan_hang" list="ngan-hang" placeholder="Chọn hoặc nhập tên ngân hàng" autocomplete="off"><span class="loi-truong" data-loi-truong="thong_tin.ten_ngan_hang"></span></label><datalist id="ngan-hang"><option value="Vietcombank"><option value="BIDV"><option value="VietinBank"><option value="MB Bank"><option value="Techcombank"><option value="ACB"></datalist><label>Mã giao dịch<input name="ma_giao_dich_ngan_hang" placeholder="Nhập mã trên giao dịch nhận tiền" autocomplete="off"><span class="loi-truong" data-loi-truong="thong_tin.ma_giao_dich_ngan_hang"></span></label></div>
+<button class="button-block" type="submit">Thanh toán và xuất hóa đơn</button>
+</form></section>
+</aside>
+</div></div>
 {% endblock %}
 {% block js %}<script src="{{ url_for('static', filename='ban_hang/don_chi_tiet.js') }}"></script>{% endblock %}

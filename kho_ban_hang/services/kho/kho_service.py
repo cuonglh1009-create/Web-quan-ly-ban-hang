@@ -4,7 +4,7 @@ from datetime import date
 from ...contracts.kho_contract import CanhBaoDTO, ChiTietDatHangDTO, IKho, IKhoObserver
 from ...contracts.kho_dto import BoLocLoDTO, DongLoHangDTO, KetQuaCanhBaoDTO
 from ...domain.enums_kho import LoaiCanhBao
-from ...domain.errors import DuLieuKhongHopLeError, TrangThaiKhongHopLeError
+from ...domain.errors import DuLieuKhongHopLeError, TrangThaiKhongHopLeError, KhongTimThayError
 from ...domain.errors_kho import HetHanSuDungError, KhongDuTonKhoError
 from ...domain.lo_hang import GiuHang, LoHang
 from .canh_bao_observer import CanhBaoSapHetHanObserver, CanhBaoTonThapObserver
@@ -32,6 +32,20 @@ class KhoService(IKho):
     def lay_so_luong_kha_dung(self, ma_sp: str) -> int:
         self.san_pham_repo.tim_theo_ma(ma_sp)
         return sum(dong.kha_dung for dong in self.tra_cuu_lo_hang(BoLocLoDTO(ma_sp=ma_sp)))
+
+    def lay_so_luong_kha_dung_nhieu(self, ma_san_pham: list[str]) -> dict[str, int]:
+        cac_ma = set(ma_san_pham)
+        if not cac_ma:
+            return {}
+        da_co = self.san_pham_repo.tim_nhieu(cac_ma)
+        for ma in sorted(cac_ma - da_co.keys()):
+            raise KhongTimThayError(f"Không tìm thấy sản phẩm {ma}.", "ma_sp")
+        ket_qua = dict.fromkeys(cac_ma, 0)
+        # Dùng lại quy tắc khả dụng của Kho; không giữ cache qua giao dịch.
+        for dong in self.tra_cuu_lo_hang(BoLocLoDTO()):
+            if dong.ma_sp in ket_qua:
+                ket_qua[dong.ma_sp] += dong.kha_dung
+        return ket_qua
 
     def chon_lo_xuat(self, ma_sp: str, so_luong: int, ngay: date) -> list[tuple[LoHang, int]]:
         if type(so_luong) is not int or so_luong <= 0:

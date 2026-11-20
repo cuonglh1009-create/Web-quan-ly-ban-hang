@@ -25,6 +25,10 @@ class IKho(ABC):
     @abstractmethod
     def lay_so_luong_kha_dung(self, ma_sp: str) -> int: ...
 
+    def lay_so_luong_kha_dung_nhieu(self, ma_san_pham: list[str]) -> dict[str, int]:
+        """Mặc định tương thích các hiện thực IKho; kho thật có thể tối ưu theo lượt."""
+        return {ma: self.lay_so_luong_kha_dung(ma) for ma in dict.fromkeys(ma_san_pham)}
+
     @abstractmethod
     def giu_hang(self, ma_don: str, chi_tiet: list[ChiTietDatHangDTO]) -> None: ...
 

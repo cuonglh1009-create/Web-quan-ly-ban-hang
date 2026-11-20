@@ -1,27 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Quản lý bán hàng{% endblock %}
+{% set sales_page = tab|default('don_hang')|replace('_','-') %}
+{% set views = {'don-hang': ['Đơn hàng','Tìm đơn, xem trạng thái và tiếp tục thanh toán.'], 'khach-hang': ['Khách hàng','Tìm thông tin, thêm khách và xem lịch sử mua hàng.'], 'thong-ke': ['Thống kê doanh thu','Doanh thu thực thu từ các đơn đã thanh toán.'], 'tra-cuu-kho': ['Tra cứu kho','Kiểm tra sản phẩm sẵn sàng bán và chuyển sang lập đơn.']} %}
+{% block title %}{{ views[sales_page][0] }}{% endblock %}
 {% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='ban_hang/ban_hang.css') }}">{% endblock %}
 {% block content %}
-<header class="page-head">
-  <div>
-    <h1 data-sales-heading>Đơn hàng</h1>
-    <p class="muted" data-sales-description>Theo dõi đơn chờ thanh toán, đơn đã thanh toán và đơn đã hủy.</p>
-  </div>
-  <div class="actions">
-    <a class="button" href="/ban-hang/don-hang/moi">+ Lập đơn bán hàng</a>
-  </div>
-</header>
-
-<!-- Thanh chuyển Tab chức năng -->
-<nav class="nav-tabs" aria-label="Tabs quản lý">
-  <button type="button" class="tab-btn active" data-tab="don-hang">Đơn hàng</button>
-  <button type="button" class="tab-btn" data-tab="khach-hang">Quản lý khách hàng</button>
-  <button type="button" class="tab-btn" data-tab="thong-ke">Doanh thu &amp; Sản phẩm</button>
-  <button type="button" class="tab-btn" data-tab="tra-cuu-kho">Tra cứu hàng trong kho</button>
-</nav>
-
-<!-- ================= TAB 1: QUẢN LÝ ĐƠN HÀNG ================= -->
-<section id="panel-don-hang" class="tab-panel">
+<header class="page-head"><div><p class="page-eyebrow">BÁN HÀNG &amp; KHÁCH HÀNG</p><h1 data-sales-heading>{{ views[sales_page][0] }}</h1><p class="muted" data-sales-description>{{ views[sales_page][1] }}</p></div><a class="button" href="/ban-hang/don-hang/moi">Lập đơn bán hàng</a></header>
+<nav class="nav-tabs" aria-label="Chức năng bán hàng">
+{% for key,label in [('don-hang','Đơn hàng'),('khach-hang','Khách hàng'),('thong-ke','Thống kê'),('tra-cuu-kho','Tra cứu kho')] %}
+<a id="tab-{{ key }}" class="tab-btn{{ ' active' if sales_page==key else '' }}" data-tab="{{ key }}" href="/ban-hang/{{ key }}"{% if sales_page==key %} aria-current="page"{% endif %}>{{ label }}</a>
+{% endfor %}</nav>
+{% if sales_page=='don-hang' %}
+<section id="panel-don-hang" data-sales-view="don-hang" class="sales-view">
   <div class="hop">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem;">
       <div class="filter-pills">
@@ -61,9 +50,8 @@
     </div>
   </div>
 </section>
-
-<!-- ================= TAB 2: QUẢN LÝ KHÁCH HÀNG ================= -->
-<section id="panel-khach-hang" class="tab-panel" hidden>
+{% elif sales_page=='khach-hang' %}
+<section id="panel-khach-hang" data-sales-view="khach-hang" class="sales-view">
   <div class="hop">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem;">
       <div>
@@ -139,7 +127,7 @@
     </div>
 
     <!-- Modal xem lịch sử đơn mua -->
-    <div id="khoi-lich-su-kh" style="margin-top: 1.25rem; background: var(--surface-muted); border: 1px solid var(--line); border-radius: .5rem; padding: 1rem;" hidden>
+    <dialog id="khoi-lich-su-kh" class="customer-history" aria-labelledby="ls-ten-kh">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .8rem;">
         <div>
           <strong>Lịch sử mua hàng của: <span id="ls-ten-kh" style="color: var(--accent);"></span></strong>
@@ -162,12 +150,11 @@
           <tbody id="bang-lich-su-kh"></tbody>
         </table>
       </div>
-    </div>
+    </dialog>
   </div>
 </section>
-
-<!-- ================= TAB 3: THỐNG KÊ DOANH THU & SẢN PHẨM ================= -->
-<section id="panel-thong-ke" class="tab-panel" hidden>
+{% elif sales_page=='thong-ke' %}
+<section id="panel-thong-ke" data-sales-view="thong-ke" class="sales-view">
   <!-- Các thẻ chỉ số tổng quan -->
   <div class="stats-grid">
     <div class="stat-card">
@@ -241,9 +228,8 @@
     </div>
   </div>
 </section>
-
-<!-- ================= TAB 4: TRA CỨU HÀNG TRONG KHO ================= -->
-<section id="panel-tra-cuu-kho" class="tab-panel" hidden>
+{% elif sales_page=='tra-cuu-kho' %}
+<section id="panel-tra-cuu-kho" data-sales-view="tra-cuu-kho" class="sales-view">
   <div class="hop">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem;">
       <div>
@@ -282,7 +268,6 @@
     </div>
   </div>
 </section>
+{% endif %}
 {% endblock %}
-{% block js %}
-<script src="{{ url_for('static', filename='ban_hang/index.js') }}"></script>
-{% endblock %}
+{% block js %}<script src="{{ url_for('static', filename='ban_hang/index.js') }}"></script>{% endblock %}

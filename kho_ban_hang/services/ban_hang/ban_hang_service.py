@@ -1,4 +1,5 @@
 from datetime import date
+from kho_ban_hang.contracts.kiem_tra_dau_vao import chuoi_bat_buoc
 
 from kho_ban_hang.contracts.ban_hang_dto import (DuLieuLapDonDTO, KetQuaHuyDonDTO, KetQuaLapDonDTO)
 from kho_ban_hang.repositories.giao_dich import GiaoDich
@@ -92,38 +93,26 @@ class BanHangService:
         return KetQuaHuyDonDTO(don.ma_don, don.trang_thai.value)
 
     def _lay_ban_do_nha_cung_cap(self) -> dict[str, str]:
-        ncc_map = {}
-        try:
-            sql = """
-                SELECT ct.ma_sp, GROUP_CONCAT(DISTINCT n.ten_ncc) AS ten_ncc
-                FROM chi_tiet_phieu_nhap ct
-                JOIN phieu_nhap p ON ct.ma_phieu = p.ma_phieu
-                JOIN nha_cung_cap n ON p.ma_ncc = n.ma_ncc
-                GROUP BY ct.ma_sp
-            """
-            for row in self.db.execute(sql).fetchall():
-                if row["ma_sp"]:
-                    ncc_map[row["ma_sp"]] = row["ten_ncc"]
-        except Exception:
-            pass
-        return ncc_map
+        rows = self.db.execute("""
+            SELECT ct.ma_sp, GROUP_CONCAT(DISTINCT n.ten_ncc) AS ten_ncc
+            FROM chi_tiet_phieu_nhap ct
+            JOIN phieu_nhap p ON ct.ma_phieu = p.ma_phieu
+            JOIN nha_cung_cap n ON p.ma_ncc = n.ma_ncc
+            WHERE p.trang_thai = 'DA_XAC_NHAN'
+            GROUP BY ct.ma_sp
+        """)
+        return {row["ma_sp"]: row["ten_ncc"] for row in rows}
 
     def lay_san_pham_goi_y(self) -> list[dict]:
         danh_sach = []
         ncc_map = self._lay_ban_do_nha_cung_cap()
-        ncc_mac_dinh = "Nhà cung cấp An Phú"
-        try:
-            row = self.db.execute("SELECT ten_ncc FROM nha_cung_cap WHERE trang_thai='HOAT_DONG' LIMIT 1").fetchone()
-            if row:
-                ncc_mac_dinh = row["ten_ncc"]
-        except Exception:
-            pass
-
-        for sp in self.tra_cuu.tim_tat_ca():
+        san_pham = self.tra_cuu.tim_tat_ca()
+        kha_dung = self.kho.lay_so_luong_kha_dung_nhieu([sp.ma_sp for sp in san_pham])
+        for sp in san_pham:
             if not sp.co_the_ban():
                 continue
-            so_kha_dung = self.kho.lay_so_luong_kha_dung(sp.ma_sp)
-            ten_ncc = ncc_map.get(sp.ma_sp, ncc_mac_dinh)
+            so_kha_dung = kha_dung[sp.ma_sp]
+            ten_ncc = ncc_map.get(sp.ma_sp, "Chưa ghi nhận")
             loai_sp = getattr(sp.loai, "value", str(sp.loai)) if hasattr(sp, "loai") else ""
             ten_dm = sp.danh_muc.ten_dm if hasattr(sp, "danh_muc") and sp.danh_muc else loai_sp
             danh_sach.append({
@@ -140,18 +129,12 @@ class BanHangService:
 
     def tra_cuu_kho(self, tu_khoa: str | None = None) -> list[dict]:
         ncc_map = self._lay_ban_do_nha_cung_cap()
-        ncc_mac_dinh = "Nhà cung cấp An Phú"
-        try:
-            ncc_row = self.db.execute("SELECT ten_ncc FROM nha_cung_cap WHERE trang_thai='HOAT_DONG' LIMIT 1").fetchone()
-            if ncc_row:
-                ncc_mac_dinh = ncc_row["ten_ncc"]
-        except Exception:
-            pass
-
         danh_sach = []
-        for sp in self.tra_cuu.tim_tat_ca():
-            ten_ncc = ncc_map.get(sp.ma_sp, ncc_mac_dinh)
-            so_kha_dung = self.kho.lay_so_luong_kha_dung(sp.ma_sp)
+        san_pham = self.tra_cuu.tim_tat_ca()
+        kha_dung = self.kho.lay_so_luong_kha_dung_nhieu([sp.ma_sp for sp in san_pham])
+        for sp in san_pham:
+            ten_ncc = ncc_map.get(sp.ma_sp, "Chưa ghi nhận")
+            so_kha_dung = kha_dung[sp.ma_sp]
             loai_sp = getattr(sp.loai, "value", str(sp.loai)) if hasattr(sp, "loai") else ""
             ten_dm = sp.danh_muc.ten_dm if hasattr(sp, "danh_muc") and sp.danh_muc else loai_sp
 
@@ -180,18 +163,23 @@ class BanHangService:
         return self.khach_repo.tra_cuu(tu_khoa)
 
     def them_khach_hang(self, du_lieu: dict) -> dict:
-        ho_ten = (du_lieu.get("ho_ten") or "").strip()
-        if not ho_ten:
-            raise LoiDuLieu("TRUONG_BAT_BUOC", "Vui lòng nhập họ tên khách hàng", "ho_ten")
-        ma_kh = (du_lieu.get("ma_kh") or "").strip() or self.khach_repo.cap_ma_moi()
-        sdt = (du_lieu.get("so_dien_thoai") or "").strip()
-        dia_chi = (du_lieu.get("dia_chi") or "").strip()
-
-        if self.khach_repo.tim_theo_ma(ma_kh) is not None:
-            raise XungDot("MA_KHACH_DA_TON_TAI", f"Mã khách hàng {ma_kh} đã tồn tại", "ma_kh")
-
-        kh = KhachThuong(ma_kh, ho_ten, sdt, dia_chi, diem_tich_luy=0)
-        self.khach_repo.luu(kh)
+        ho_ten = chuoi_bat_buoc(du_lieu.get("ho_ten"), "ho_ten", 160)
+        def chuoi_tuy_chon(ten, toi_da):
+            value = du_lieu.get(ten)
+            if value is None:
+                return ""
+            if not isinstance(value, str) or len(value.strip()) > toi_da:
+                raise LoiDuLieu("DU_LIEU_KHONG_HOP_LE", f"Nhập văn bản tối đa {toi_da} ký tự", ten)
+            return value.strip()
+        ma_kh = chuoi_tuy_chon("ma_kh", 64)
+        sdt = chuoi_tuy_chon("so_dien_thoai", 40)
+        dia_chi = chuoi_tuy_chon("dia_chi", 500)
+        with GiaoDich(self.db):
+            ma_kh = ma_kh or self.khach_repo.cap_ma_moi()
+            if self.khach_repo.tim_theo_ma(ma_kh) is not None:
+                raise XungDot("MA_KHACH_DA_TON_TAI", f"Mã khách hàng {ma_kh} đã tồn tại", "ma_kh")
+            kh = KhachThuong(ma_kh, ho_ten, sdt, dia_chi, diem_tich_luy=0)
+            self.khach_repo.luu(kh)
         return {
             "ma_kh": kh.ma_kh,
             "ho_ten": kh.ho_ten,

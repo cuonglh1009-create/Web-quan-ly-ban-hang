@@ -11,11 +11,18 @@ const suppliers = new Map((catalog.nha_cung_cap || []).map(p => [p.ma_ncc, p.ten
 const normalize = value => (value || "").toLocaleLowerCase("vi").replaceAll("đ","d")
   .normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
+function hienThi(selector, value, root=document) {
+  const element=root.querySelector(selector);
+  if(element)element.textContent=value;
+}
+
 function hienLoi(loi, form) {
   const notice = document.querySelector("[data-error]");
   if (!notice) return;
   notice.hidden = !loi;
-  notice.textContent = loi?.message || "";
+  const internal=loi instanceof TypeError || loi instanceof ReferenceError;
+  if(internal)console.error("Không khởi tạo được một thành phần giao diện kho:",loi);
+  notice.textContent = !loi ? "" : internal ? "Một phần giao diện chưa tải được. Hãy tải lại trang để cập nhật." : (loi.message || "Không thực hiện được yêu cầu. Vui lòng thử lại.");
   if (!loi) return;
   if (form && loi.truong) {
     const match = /^dong\[(\d+)\]\.(\w+)$/.exec(loi.truong);
@@ -49,7 +56,7 @@ function lotStatus(row) {
   const today = new Date();
   const current = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
   const expiry = row.han_su_dung ? Date.parse(row.han_su_dung + "T00:00:00Z") : null;
-  if (expiry !== null && expiry < current) return ["Đã hết hạn", "danger", "het_han"];
+  if (expiry !== null && expiry < current) return ["Đã hết hạn", "neutral", "het_han"];
   if (row.ton_thuc_te === 0) return ["Hết hàng", "neutral", "het_hang"];
   if (expiry !== null && expiry <= current + catalog.so_ngay_canh_bao * 86400000) return ["Sắp hết hạn", "pending", "sap_het_han"];
   if (row.kha_dung === 0) return ["Không khả dụng", "neutral", "khong_kha_dung"];
@@ -94,19 +101,20 @@ function hienTonTheoSanPham(lots) {
 
 async function dashboard(section) {
   const [lots, alerts] = await Promise.all([goiApi(api + "/lo-hang"), goiApi(api + "/canh-bao")]);
-  section.querySelector("[data-lots]").textContent = number.format(lots.length);
-  section.querySelector("[data-available]").textContent = number.format([...tongHopTon(lots).values()].filter(p => p.available > 0).length);
-  section.querySelector("[data-low]").textContent = number.format(alerts.ton_thap.length);
-  section.querySelector("[data-expiring]").textContent = number.format(alerts.sap_het_han.length);
+  hienThi("[data-lots]",number.format(lots.length),section);
+  hienThi("[data-available]",number.format([...tongHopTon(lots).values()].filter(p => p.available > 0).length),section);
+  hienThi("[data-low]",number.format(alerts.ton_thap.length),section);
+  hienThi("[data-reserved-lots]",number.format(lots.filter(lot=>lot.dang_giu>0).length),section);
   hienTonTheoSanPham(lots);
   section.setAttribute("aria-busy","false");
-  document.querySelector("[data-dashboard-updated]").textContent = "Cập nhật lúc " + new Date().toLocaleTimeString("vi-VN");
+  hienThi("[data-dashboard-updated]","Cập nhật lúc " + new Date().toLocaleTimeString("vi-VN"));
   const preview = document.querySelector("[data-alert-preview]");
+  if(!preview)return;
   preview.replaceChildren();
   for (const warning of [...alerts.ton_thap.slice(0,2), ...alerts.sap_het_han.slice(0,2)]) {
     const item = preview.appendChild(document.createElement("div"));
     item.className = "alert-preview";
-    item.append(badge(warning.ma_lo ? "Sắp hết hạn" : "Tồn thấp", warning.ma_lo ? "danger" : "pending"));
+    item.append(badge(warning.ma_lo ? "Sắp hết hạn" : "Tồn thấp", warning.ma_lo ? "neutral" : "pending"));
     const title = item.appendChild(document.createElement("strong"));
     title.textContent = (products.get(warning.ma_sp)?.ten_sp || warning.ma_sp) + (warning.ma_lo ? " · " + warning.ma_lo : "");
     const action = item.appendChild(document.createElement("a"));
@@ -135,7 +143,8 @@ function formPhieu(form) {
   form.addEventListener("input", ({ target }) => {
     target.removeAttribute("aria-invalid");
     const quantity = Number(row.elements.so_luong_nhap.value) || 0;
-    const price = Number(row.elements.gia_nhap.value) || 0;
+    const price = Api.docTien(row.elements.gia_nhap.value) || 0;
+    row.elements.gia_nhap.setCustomValidity("");
     form.querySelector("[data-receipt-total]").textContent = money(quantity * price);
   });
   let submitted = false;
@@ -144,9 +153,11 @@ function formPhieu(form) {
     if (save.disabled) return;
     hienLoi(null);
     const get = name => row.elements.namedItem(name).value;
+    const price=Api.docTien(get("gia_nhap"));
+    if(!Number.isSafeInteger(price)||price<=0){row.elements.gia_nhap.setCustomValidity("Nhập giá hợp lệ, ví dụ 135.000");row.elements.gia_nhap.reportValidity();return;}
     const dong = [{
       ma_sp: get("ma_sp"), ma_lo: get("ma_lo").trim(),
-      so_luong_nhap: Number(get("so_luong_nhap")), gia_nhap: Number(get("gia_nhap")),
+      so_luong_nhap: Number(get("so_luong_nhap")), gia_nhap: price,
       ngay_san_xuat: get("ngay_san_xuat") || null, han_su_dung: get("han_su_dung") || null,
     }];
     save.disabled = true;
@@ -195,8 +206,10 @@ async function chiTietPhieu(section) {
     }
     section.querySelector("[data-total]").textContent = money(receipt.dong.reduce((sum,p)=>sum+p.gia_nhap*p.so_luong_nhap,0));
     confirm.hidden = completed;
+    const reviewStep=document.querySelector("[data-review-step]"),doneStep=document.querySelector("[data-confirm-step]");
+    if(reviewStep && doneStep){reviewStep.toggleAttribute("aria-current",!completed);if(!completed)reviewStep.setAttribute("aria-current","step");doneStep.toggleAttribute("aria-current",completed);if(completed)doneStep.setAttribute("aria-current","step");}
     section.querySelector("[data-details]").hidden = false;
-    document.querySelector("[data-print]").disabled = false;
+    const print=document.querySelector("[data-print]");if(print)print.disabled=false;
   }
   try { show(await goiApi(path)); }
   finally { section.querySelector("[data-loading]").hidden = true; }
@@ -263,7 +276,7 @@ async function danhSachLo(section) {
     result = lots.filter(item => {
       const matches = exactProduct && term === normalize(exactProduct) ? item.ma_sp === exactProduct :
         exactLot && term === normalize(exactLot) ? item.ma_lo === exactLot : searchIndex.get(item.ma_lo).includes(term);
-      return matches && (!status || lotStatus(item)[2]===status);
+      return matches && (!status || (status==="dang_giu" ? item.dang_giu>0 : lotStatus(item)[2]===status));
     });
     page = 1;
     const query = new URLSearchParams();

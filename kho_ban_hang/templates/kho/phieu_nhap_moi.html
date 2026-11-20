@@ -2,7 +2,8 @@
 {% block title %}Lập phiếu nhập kho{% endblock %}
 {% block content %}
 <a class="breadcrumb" href="{{ url_for('kho.danh_sach_phieu') }}">← Phiếu nhập</a>
-<header class="page-head"><div><h1>Lập phiếu nhập</h1><p class="muted">Ghi nhận hàng nhập và lưu phiếu trước khi xác nhận.</p></div></header>
+<header class="page-head"><div><h1>Lập phiếu nhập</h1><p class="muted">Chọn nhà cung cấp, điền hàng nhập rồi kiểm tra phiếu trước khi xác nhận.</p></div></header>
+<ol class="workflow-steps" aria-label="Quy trình nhập kho"><li aria-current="step">Nhập thông tin</li><li>Kiểm tra phiếu</li><li>Xác nhận tồn kho</li></ol>
 <p class="notice" data-error hidden role="alert"></p>
 <form data-receipt-form>
   <div class="form-layout"><section class="panel info-panel">
@@ -30,9 +31,9 @@
           <option value="">Chọn sản phẩm</option>
           {% for sp in san_pham %}<option value="{{ sp.ma_sp }}" data-name="{{ sp.ten_sp }}" data-food="{{ 'yes' if sp.loai.value == 'THUC_PHAM' else 'no' }}">{{ sp.ma_sp }} · {{ sp.ten_sp }}</option>{% endfor %}
         </select></label>
-        <label>Mã lô<input name="ma_lo" required maxlength="64"></label>
-        <label>Số lượng<input name="so_luong_nhap" type="number" min="1" step="1" required></label>
-        <label>Giá nhập mỗi đơn vị (đ)<input name="gia_nhap" type="number" min="1" step="1" required></label>
+        <label>Mã lô<input name="ma_lo" required maxlength="64" placeholder="Ví dụ: LO-20261120-01" autocomplete="off"></label>
+        <label>Số lượng<input name="so_luong_nhap" type="number" min="1" step="1" required placeholder="Nhập số lượng"></label>
+        <label>Giá nhập mỗi đơn vị (đ)<input name="gia_nhap" inputmode="numeric" data-money required placeholder="Ví dụ: 135.000" autocomplete="off"></label>
         <label>Ngày sản xuất<input name="ngay_san_xuat" type="date"></label>
         <label>Hạn sử dụng<input name="han_su_dung" type="date"></label>
       </div>

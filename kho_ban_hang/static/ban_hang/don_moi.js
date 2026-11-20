@@ -74,8 +74,9 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
         capNhatDropdownSanPham(spData);
         capNhatDanhMucNhanh(spData);
         if(spData.some(sp=>sp.ma_sp===selected))chonSpSelect.value=selected;
+        const byCode=new Map(spData.map(sp=>[sp.ma_sp,sp]));
         for(const dong of cacDongHang){
-          const current=spData.find(sp=>sp.ma_sp===dong.ma_sp);
+          const current=byCode.get(dong.ma_sp);
           dong.so_kha_dung=current?.so_kha_dung||0;
           if(current)dong.don_gia=current.gia_niem_yet;
         }
@@ -711,11 +712,9 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async (phien) => {
       sdt_kh = sdtKhMoiInput.value.trim();
       dia_chi_kh = diaChiKhMoiInput ? diaChiKhMoiInput.value.trim() : null;
       ma_kh = maKhTuDongEl ? maKhTuDongEl.value.trim() : null;
-    } else {
-      loi.textContent = "Vui lòng chọn khách hàng có sẵn hoặc thêm thông tin khách hàng mới cho đơn này.";
-      loi.hidden = false;
-      nhapTimKhachInput.focus();
-      return;
+    } else if(!khoiThemKhachNhanh.hidden && (tenKhMoiInput.value.trim() || sdtKhMoiInput.value.trim())){
+      loi.textContent="Điền đủ tên và số điện thoại, hoặc đóng phần thêm khách để bán cho khách lẻ.";
+      loi.hidden=false;tenKhMoiInput.focus();return;
     }
 
     const payload = {

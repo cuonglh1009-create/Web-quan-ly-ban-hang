@@ -1,83 +1,14 @@
-Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
-  // 1. Quản lý chuyển Tab
-  const tabButtons = document.querySelectorAll(".tab-btn"),
-        tabPanels = document.querySelectorAll(".tab-panel");
-
-  const duongDanTab = {"don-hang":"/ban-hang/don-hang","khach-hang":"/ban-hang/khach-hang","thong-ke":"/ban-hang/thong-ke","tra-cuu-kho":"/ban-hang/tra-cuu-kho"};
-  const tieuDeTab = {
-    "don-hang":["Đơn hàng","Theo dõi đơn chờ thanh toán, đơn đã thanh toán và đơn đã hủy."],
-    "khach-hang":["Khách hàng","Tra cứu thông tin, thêm khách hàng và xem lịch sử mua hàng."],
-    "thong-ke":["Thống kê doanh thu","Theo dõi doanh thu thực thu và các sản phẩm đã bán."],
-    "tra-cuu-kho":["Tra cứu kho","Kiểm tra hàng có thể bán trước khi lập đơn."]
-  };
-  function tabHienTai(){return Object.keys(duongDanTab).find(key=>duongDanTab[key]===location.pathname)||"don-hang";}
-  function chuyenTab(tabName, luuLichSu=false) {
-    if(!duongDanTab[tabName])return;
-    if(luuLichSu && location.pathname!==duongDanTab[tabName]) history.pushState(null,"",duongDanTab[tabName]);
-    const [title,description]=tieuDeTab[tabName];
-    document.querySelector("[data-sales-heading]").textContent=title;
-    document.querySelector("[data-sales-description]").textContent=description;
-    document.title=title+" · Kho & Bán hàng";
-    tabButtons.forEach((btn) => {
-      const active = btn.dataset.tab === tabName;
-      btn.classList.toggle("active", active);
-      btn.setAttribute("aria-selected",String(active));
-      btn.tabIndex = active ? 0 : -1;
-    });
-    tabPanels.forEach((panel) => {
-      panel.hidden = panel.id !== `panel-${tabName}`;
-      panel.setAttribute("role","tabpanel");
-      panel.setAttribute("aria-labelledby","tab-" + panel.id.replace("panel-",""));
-    });
-
-    const currentPath = tabName === "don-hang" ? "/ban-hang/don-hang" : "/ban-hang/" + tabName;
-    document.querySelectorAll("#menu a").forEach(link => {
-      if(link.getAttribute("href") === currentPath) link.setAttribute("aria-current","page");
-      else link.removeAttribute("aria-current");
-    });
-    // Tải dữ liệu tương ứng theo tab
-    if (tabName === "don-hang") taiDanhSachDon();
-    else if (tabName === "khach-hang") taiDanhSachKhach(document.getElementById("tu-khoa-kh")?.value.trim() || "");
-    else if (tabName === "thong-ke") taiThongKe();
-    else if (tabName === "tra-cuu-kho") taiTraCuuKho(document.getElementById("tu-khoa-kho").value.trim());
-  }
-
-  document.querySelector(".nav-tabs")?.setAttribute("role","tablist");
-  tabButtons.forEach((btn,index) => {
-    btn.id = "tab-" + btn.dataset.tab;
-    btn.setAttribute("role","tab");
-    btn.setAttribute("aria-controls","panel-" + btn.dataset.tab);
-    btn.addEventListener("keydown",event => {
-      const keys = ["ArrowLeft","ArrowRight","Home","End"];
-      if(!keys.includes(event.key))return;
-      event.preventDefault();
-      let target = event.key==="Home" ? 0 : event.key==="End" ? tabButtons.length-1 :
-        (index+(event.key==="ArrowRight"?1:-1)+tabButtons.length)%tabButtons.length;
-      tabButtons[target].click();tabButtons[target].focus();
-    });
-    btn.onclick = () => {
-      chuyenTab(btn.dataset.tab,true);
-    };
-  });
-
-  document.querySelector("#menu").addEventListener("click",event=>{
-    const link=event.target.closest("a");
-    if(!link || event.ctrlKey||event.metaKey||event.shiftKey||event.altKey||event.button!==0)return;
-    const tab=Object.keys(duongDanTab).find(key=>duongDanTab[key]===new URL(link.href).pathname);
-    if(!tab)return;
-    event.preventDefault();chuyenTab(tab,true);
-    document.dispatchEvent(new Event("workspace:navigated"));
-  });
-  window.addEventListener("popstate",()=>chuyenTab(tabHienTai()));
-  // Tất cả biến của các bảng phải khởi tạo trước lượt tải đầu tiên.
-  queueMicrotask(()=>chuyenTab(tabHienTai()));
-
+/* Mỗi trang chỉ khởi tạo các điều khiển của chính trang đó. */
+Api.khoiTao({batBuoc:"NV_BAN_HANG"}).then(()=>{
+  const root=document.querySelector("[data-sales-view]");
+  if(!root)return;
   const requests=new Map();
   function batDauTai(key){
     requests.get(key)?.abort();
     const controller=new AbortController();requests.set(key,controller);return controller;
   }
-  // ================= TAB 1: ĐƠN ĐÃ BÁN =================
+  const pages={
+    "don-hang": () => {
   let locTrangThaiDon = "";
   const bangDonHang = document.getElementById("bang-don-hang"),
         formTimDon = document.getElementById("form-tim-don"),
@@ -188,8 +119,9 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
       bangDonHang.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi tải đơn hàng: ${Api.html(err.thong_bao || err.message)}</td></tr>`;
     }
   }
-
-  // ================= TAB 2: QUẢN LÝ KHÁCH HÀNG =================
+      taiDanhSachDon();
+    },
+    "khach-hang": () => {
   const bangKhachHang = document.getElementById("bang-khach-hang"),
         formTraCuuKh = document.getElementById("form-tra-cuu-kh"),
         tuKhoaKhInput = document.getElementById("tu-khoa-kh"),
@@ -232,10 +164,13 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
 
   nutDongThemKh.onclick = () => { khoiThemKh.hidden = true; };
   nutHuyThemKh.onclick = () => { khoiThemKh.hidden = true; };
-  nutDongLichSu.onclick = () => { khoiLichSuKh.hidden = true; };
+  nutDongLichSu.onclick = () => khoiLichSuKh.close();
+  khoiLichSuKh.addEventListener("close",()=>requests.get("lich-su")?.abort());
 
   formThemKh.onsubmit = async (ev) => {
     ev.preventDefault();
+    const save=formThemKh.querySelector('button[type="submit"]');
+    if(save.disabled)return;
     loiThemKh.hidden = true;
     const ho_ten = formThemKh.ho_ten.value.trim();
     const so_dien_thoai = formThemKh.so_dien_thoai.value.trim();
@@ -253,15 +188,17 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
       return;
     }
 
+    save.disabled=true;save.textContent="Đang lưu…";
     try {
       await Api.post("/api/ban-hang/khach-hang", { ma_kh, ho_ten, so_dien_thoai, dia_chi });
       khoiThemKh.hidden = true;
       formThemKh.reset();
-      taiDanhSachKhach();
+      tuKhoaKhInput.value="";
+      await taiDanhSachKhach();
     } catch (err) {
       loiThemKh.textContent = err.thong_bao || "Lỗi lưu khách hàng";
       loiThemKh.hidden = false;
-    }
+    } finally {save.disabled=false;save.textContent="Lưu khách hàng";}
   };
 
   async function taiDanhSachKhach(tuKhoa = "") {
@@ -343,12 +280,13 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
     lsTenKh.textContent = `${kh.ho_ten} (${kh.ma_kh})`;
     lsHangBadge.textContent = kh.hang === "VIP" ? "VIP" : "THƯỜNG";
     lsHangBadge.className = "badge " + (kh.hang === "VIP" ? "success" : "");
-    khoiLichSuKh.hidden = false;
-    khoiLichSuKh.scrollIntoView({ behavior: "smooth" });
+    const request=batDauTai("lich-su");
+    if(!khoiLichSuKh.open)khoiLichSuKh.showModal();
 
     bangLichSuKh.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--muted); padding: 1rem;">Đang tải lịch sử đơn hàng...</td></tr>`;
     try {
-      const ds = await Api.get(`/api/ban-hang/khach-hang/${encodeURIComponent(kh.ma_kh)}/don-hang`);
+      const ds = await Api.get(`/api/ban-hang/khach-hang/${encodeURIComponent(kh.ma_kh)}/don-hang`,{signal:request.signal});
+      if(request.signal.aborted)return;
       bangLichSuKh.replaceChildren();
 
       if (!ds || ds.length === 0) {
@@ -385,11 +323,13 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
         bangLichSuKh.append(tr);
       }
     } catch (err) {
+      if(request.signal.aborted || err.name==="AbortError")return;
       bangLichSuKh.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--loi); padding: 1rem;">Lỗi: ${Api.html(err.thong_bao || err.message)}</td></tr>`;
     }
   }
-
-  // ================= TAB 3: THỐNG KÊ DOANH THU & SẢN PHẨM =================
+      taiDanhSachKhach();
+    },
+    "thong-ke": () => {
   let kieuThongKeDoanhThu = "ngay";
   const bangDoanhThu = document.getElementById("bang-thong-ke-doanh-thu"),
         bangSanpham = document.getElementById("bang-thong-ke-san-pham"),
@@ -537,8 +477,9 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
       bangSanpham.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi: ${Api.html(err.thong_bao || err.message)}</td></tr>`;
     }
   }
-
-  // ================= TAB 4: TRA CỨU HÀNG TRONG KHO =================
+      taiThongKe();
+    },
+    "tra-cuu-kho": () => {
   const bangTraCuuKho = document.getElementById("bang-tra-cuu-kho"),
         formTimKho = document.getElementById("form-tim-kho"),
         tuKhoaKhoInput = document.getElementById("tu-khoa-kho"),
@@ -634,4 +575,8 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(() => {
       bangTraCuuKho.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi tải kho: ${Api.html(err.thong_bao || err.message)}</td></tr>`;
     }
   }
+      taiTraCuuKho();
+    }
+  };
+  pages[root.dataset.salesView]?.();
 }).catch(error=>Api.hienLoiPhien(error));

@@ -67,7 +67,8 @@ const Api = {
         menu.append(a);
       }
     }
-    ten.textContent = p.nguoi_dung.ho_ten;
+    if(ten)ten.textContent = p.nguoi_dung.ho_ten;
+    if(!nut)return;
     nut.hidden = false;
     nut.onclick = async () => {
       if(nut.disabled)return;
@@ -84,9 +85,20 @@ const Api = {
     let notice=main.querySelector("[data-session-error]");
     if(!notice){notice=document.createElement("div");notice.className="notice";notice.dataset.sessionError="";notice.setAttribute("role","alert");main.prepend(notice);}
     notice.replaceChildren();
-    const text=document.createElement("p");text.textContent=error.thong_bao||error.message||"Không tải được phiên làm việc.";
+    const text=document.createElement("p");
+    const internal=error instanceof TypeError || error instanceof ReferenceError;
+    if(internal)console.error("Không khởi tạo được giao diện:",error);
+    text.textContent=internal?"Không tải được giao diện. Hãy tải lại trang để cập nhật.":(error.thong_bao||error.message||"Không tải được phiên làm việc.");
     const retry=document.createElement("button");retry.type="button";retry.className="secondary";retry.textContent="Tải lại trang";retry.onclick=()=>location.reload();
     notice.append(text,retry);
+  },
+
+  docTien(value) {
+    const raw=String(value ?? "").trim().replace(/[\u00a0\u202f]/g," ");
+    if(!raw)return null;
+    if(!/^\d+$/.test(raw) && !/^\d{1,3}([., ])\d{3}(?:\1\d{3})*$/.test(raw))return NaN;
+    const number=Number(raw.replace(/[., ]/g,""));
+    return Number.isSafeInteger(number) && number>=0 ? number : NaN;
   },
 
   html(value) {

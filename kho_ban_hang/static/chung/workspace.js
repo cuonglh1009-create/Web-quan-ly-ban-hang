@@ -40,6 +40,12 @@
     };
     const observer=new ResizeObserver(update);observer.observe(wrap);if(wrap.querySelector("table"))observer.observe(wrap.querySelector("table"));update();
   });
+  document.addEventListener("focusout",event=>{
+    const input=event.target;
+    if(!input.matches?.("input[data-money]") || typeof Api==="undefined")return;
+    const value=Api.docTien(input.value);
+    if(Number.isSafeInteger(value))input.value=new Intl.NumberFormat("vi-VN").format(value);
+  });
   const dialog=document.querySelector("#workspace-shortcuts");if(!dialog)return;
   const search=dialog.querySelector("input"),results=dialog.querySelector("[data-jump-results]");
   const normalize=value=>value.toLowerCase().replaceAll("đ","d").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();

@@ -51,6 +51,7 @@ class KetQuaLapDonDTO(_DTO):
     ma_kh: str | None = None
     ten_kh: str | None = None
     hang_kh: str | None = None
+    dong: list[dict] = field(default_factory=list)
 
     @classmethod
     def tu_don_hang(cls, don) -> "KetQuaLapDonDTO":
@@ -59,7 +60,12 @@ class KetQuaLapDonDTO(_DTO):
         hang_kh = "VIP" if (don.khach_hang and getattr(don.khach_hang, "la_vip", False)) else ("THUONG" if don.khach_hang else None)
         return cls(don.ma_don, don.trang_thai.value, don.tinh_tam_tinh(),
                    don.giam_hang_khach, don.giam_khuyen_mai, don.so_phai_tra(),
-                   ma_kh, ten_kh, hang_kh)
+                   ma_kh, ten_kh, hang_kh, [
+                       {"ma_sp": ct.san_pham.ma_sp, "ten_sp": ct.san_pham.ten_sp,
+                        "don_vi_tinh": ct.san_pham.don_vi_tinh, "so_luong": ct.so_luong,
+                        "don_gia": ct.don_gia, "thanh_tien": ct.thanh_tien()}
+                       for ct in don.chi_tiet
+                   ])
 
 
 @dataclass

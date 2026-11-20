@@ -52,6 +52,18 @@ def create_app(cau_hinh: CauHinh | None = None, kho_gia=None, tra_cuu_gia=None, 
         "xac_thuc.trang_dang_nhap"))
     app.jinja_env.globals["csrf_token"] = lambda: container().xac_thuc.csrf_hien_tai(doc_cookie())
 
+    @app.url_defaults
+    def phien_ban_tai_nguyen(endpoint, values):
+        if endpoint != "static" or "filename" not in values or "v" in values:
+            return
+        root = (GOC / "static").resolve()
+        path = (root / values["filename"]).resolve()
+        if path.is_relative_to(root):
+            try:
+                values["v"] = str(path.stat().st_mtime_ns)
+            except OSError:
+                pass
+
     @app.before_request
     def kiem_tra_csrf():
         if (request.path.startswith("/api/") and request.method in PHUONG_THUC_GHI
@@ -60,7 +72,7 @@ def create_app(cau_hinh: CauHinh | None = None, kho_gia=None, tra_cuu_gia=None, 
 
     @app.after_request
     def khong_luu_cache(resp):
-        if request.path.startswith("/api/"):
+        if request.path.startswith("/api/") or resp.mimetype == "text/html":
             resp.headers["Cache-Control"] = "no-store"
         return resp
 

@@ -92,11 +92,15 @@ class KhachHangRepository:
     def lay_lich_su_don_hang(self, ma_kh: str) -> list[dict]:
         sql = """
             SELECT dh.ma_don, dh.ngay_lap, dh.trang_thai, dh.giam_hang_khach, dh.giam_khuyen_mai,
-                   COALESCE(hd.tong_thanh_toan, 0) AS tong_thanh_toan,
+                   COALESCE(hd.tong_thanh_toan, MAX(0, COALESCE(ct.tam_tinh,0)-dh.giam_hang_khach-dh.giam_khuyen_mai)) AS tong_thanh_toan,
                    nv.ho_ten AS ten_nv
             FROM don_hang dh
             LEFT JOIN hoa_don hd ON dh.ma_don = hd.ma_don
             LEFT JOIN nhan_vien nv ON dh.ma_nv = nv.ma_nv
+            LEFT JOIN (
+                SELECT ma_don,SUM(so_luong*don_gia) AS tam_tinh
+                FROM chi_tiet_don_hang GROUP BY ma_don
+            ) ct ON ct.ma_don=dh.ma_don
             WHERE dh.ma_kh = ?
             ORDER BY dh.ngay_lap DESC, dh.ma_don DESC
         """

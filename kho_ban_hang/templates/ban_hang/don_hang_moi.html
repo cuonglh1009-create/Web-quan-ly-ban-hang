@@ -5,7 +5,7 @@
 <header class="page-head">
   <div>
     <h1>Lập đơn bán hàng</h1>
-    <p class="muted">Đơn giá tự động lấy từ kho - Khách VIP được giảm 10% tổng hóa đơn</p>
+    <p class="muted">Chọn sản phẩm và số lượng. Có thể bán cho khách lẻ hoặc chọn khách để tích điểm.</p>
   </div>
   <a class="button secondary" href="/ban-hang/don-hang">Danh sách đơn hàng</a>
 </header>
@@ -14,6 +14,7 @@
   <!-- 1. Thông tin đơn hàng & Khách hàng -->
   <fieldset class="hop-con" style="border: none; padding: 0; margin-bottom: 1.5rem;">
     <legend style="font-weight: 700; font-size: 1.05rem; margin-bottom: .8rem; color: var(--accent);">Thông tin đơn hàng &amp; Khách hàng</legend>
+    <details class="order-meta"><summary>Thông tin lập đơn (tự động)</summary>
     <div class="field-grid">
       <label>
         Mã đơn hàng (hệ thống tự động điền)
@@ -24,13 +25,14 @@
         <input id="ten-nhan-vien" readonly style="background: var(--surface-muted);" value="Nhân viên bán hàng">
       </label>
     </div>
+    </details>
 
     <!-- 1. Tích hợp Thông tin Khách hàng (Nhập, Chọn hoặc Thêm mới nhanh ngay tại chỗ) -->
     <div style="margin-top: 1rem; padding: 1.1rem; background: var(--surface-muted); border: 1px solid var(--line); border-radius: .5rem;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .85rem; flex-wrap: wrap; gap: .5rem;">
         <div>
-          <span style="font-weight: 700; font-size: .95rem; color: var(--ink);">Khách hàng mua hàng:</span>
-          <p class="muted" style="font-size: .82rem; margin-top: .15rem;">Chọn khách có sẵn, nhập tìm nhanh theo Tên/SĐT hoặc bấm thêm khách mới ngay tại đây</p>
+          <span style="font-weight: 700; font-size: .95rem; color: var(--ink);">Khách hàng (không bắt buộc)</span>
+          <p class="muted" style="font-size: .82rem; margin-top: .15rem;">Để trống để bán cho khách lẻ. Tìm khách theo tên hoặc số điện thoại khi cần tích điểm.</p>
         </div>
         <div>
           <button type="button" id="nut-bat-them-kh" class="secondary" style="padding: .35rem .75rem; font-size: .85rem; font-weight: 600; color: var(--accent); border-color: var(--accent);">
