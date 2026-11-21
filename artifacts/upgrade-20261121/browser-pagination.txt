@@ -1,1 +1,0 @@
-PASS: real backend paging of lots/receipts/orders/customers, empty/reset/reload, 45 responsive page-width combinations, food required dates, duplicate lot, VIP+promo, insufficient cash, cancel releases stock, role and expired-session redirect.
