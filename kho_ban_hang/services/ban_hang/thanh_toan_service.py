@@ -68,5 +68,6 @@ class ThanhToanService:
             hd.ma_hd, don.ma_don, hd.ngay_xuat.isoformat(), hd.tong_tien_truoc_giam,
             hd.tong_giam, hd.tong_thanh_toan, tt.phuong_thuc.value,
             getattr(tt, "tien_thoi", None),
-            [{"ma_sp": c.san_pham.ma_sp, "so_luong": c.so_luong, "don_gia": c.don_gia,
+            [{"ma_sp": c.san_pham.ma_sp, "ten_sp": c.san_pham.ten_sp,
+              "don_vi_tinh": c.san_pham.don_vi_tinh, "so_luong": c.so_luong, "don_gia": c.don_gia,
               "thanh_tien": c.thanh_tien()} for c in don.chi_tiet])   # giá đã chốt

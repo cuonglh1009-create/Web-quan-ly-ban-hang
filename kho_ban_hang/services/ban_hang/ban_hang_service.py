@@ -3,6 +3,7 @@ from kho_ban_hang.contracts.kiem_tra_dau_vao import chuoi_bat_buoc
 
 from kho_ban_hang.contracts.ban_hang_dto import (DuLieuLapDonDTO, KetQuaHuyDonDTO, KetQuaLapDonDTO)
 from kho_ban_hang.repositories.giao_dich import GiaoDich
+from kho_ban_hang.repositories.tim_kiem import chuan_hoa
 from kho_ban_hang.contracts.kho_contract import ChiTietDatHangDTO
 from kho_ban_hang.domain.don_hang import DonHang
 from kho_ban_hang.domain.enums_chung import TrangThaiDonHang as TT
@@ -93,24 +94,14 @@ class BanHangService:
         return KetQuaHuyDonDTO(don.ma_don, don.trang_thai.value)
 
     def _lay_ban_do_nha_cung_cap(self) -> dict[str, str]:
-        rows = self.db.execute("""
-            SELECT ct.ma_sp, GROUP_CONCAT(DISTINCT n.ten_ncc) AS ten_ncc
-            FROM chi_tiet_phieu_nhap ct
-            JOIN phieu_nhap p ON ct.ma_phieu = p.ma_phieu
-            JOIN nha_cung_cap n ON p.ma_ncc = n.ma_ncc
-            WHERE p.trang_thai = 'DA_XAC_NHAN'
-            GROUP BY ct.ma_sp
-        """)
-        return {row["ma_sp"]: row["ten_ncc"] for row in rows}
+        return self.tra_cuu.lay_nha_cung_cap_theo_san_pham()
 
     def lay_san_pham_goi_y(self) -> list[dict]:
         danh_sach = []
         ncc_map = self._lay_ban_do_nha_cung_cap()
-        san_pham = self.tra_cuu.tim_tat_ca()
+        san_pham = [sp for sp in self.tra_cuu.tim_tat_ca() if sp.co_the_ban()]
         kha_dung = self.kho.lay_so_luong_kha_dung_nhieu([sp.ma_sp for sp in san_pham])
         for sp in san_pham:
-            if not sp.co_the_ban():
-                continue
             so_kha_dung = kha_dung[sp.ma_sp]
             ten_ncc = ncc_map.get(sp.ma_sp, "Chưa ghi nhận")
             loai_sp = getattr(sp.loai, "value", str(sp.loai)) if hasattr(sp, "loai") else ""
@@ -131,17 +122,19 @@ class BanHangService:
         ncc_map = self._lay_ban_do_nha_cung_cap()
         danh_sach = []
         san_pham = self.tra_cuu.tim_tat_ca()
+        tu_khoa_chuan = chuan_hoa(tu_khoa or "")
+        if tu_khoa_chuan:
+            san_pham = [
+                sp for sp in san_pham
+                if any(tu_khoa_chuan in chuan_hoa(value) for value in
+                       (sp.ma_sp, sp.ten_sp, ncc_map.get(sp.ma_sp, "")))
+            ]
         kha_dung = self.kho.lay_so_luong_kha_dung_nhieu([sp.ma_sp for sp in san_pham])
         for sp in san_pham:
             ten_ncc = ncc_map.get(sp.ma_sp, "Chưa ghi nhận")
             so_kha_dung = kha_dung[sp.ma_sp]
             loai_sp = getattr(sp.loai, "value", str(sp.loai)) if hasattr(sp, "loai") else ""
             ten_dm = sp.danh_muc.ten_dm if hasattr(sp, "danh_muc") and sp.danh_muc else loai_sp
-
-            if tu_khoa:
-                tk = tu_khoa.lower()
-                if tk not in sp.ma_sp.lower() and tk not in sp.ten_sp.lower() and tk not in ten_ncc.lower():
-                    continue
 
             danh_sach.append({
                 "ma_sp": sp.ma_sp,

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="color-scheme" content="light">
-  <title>{% block title %}Quản lý kho{% endblock %} · Kho &amp; Bán hàng</title>
+  <title>{% block title %}Quản lý kho{% endblock %} · Quản lý bán hàng</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='kho/kho.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='chung/workspace.css') }}">
   <script src="{{ url_for('static',filename='chung/workspace.js') }}" defer></script>
@@ -15,7 +15,7 @@
 <a class="skip" href="#main">Đến nội dung</a>
 <div class="shell">
   <aside class="sidebar" id="kho-navigation">
-    <a class="brand" href="{{ url_for('kho.index') }}"><span>Kho &amp; Bán hàng<small>Quản lý hoạt động cửa hàng</small></span></a>
+    <a class="brand" href="{{ url_for('kho.index') }}"><span>Quản lý bán hàng<small>Quản lý hoạt động cửa hàng</small></span></a>
     <div class="nav-caption">QUẢN LÝ KHO</div>
     <nav aria-label="Phân hệ Kho">
       {% for endpoint, label, icon in [('kho.index','Tổng quan','◫'),('kho.danh_sach_phieu','Phiếu nhập','▤'),('kho.lo_hang','Lô hàng','▦'),('kho.san_pham','Sản phẩm','▧'),('kho.canh_bao','Cảnh báo','◇')] %}
@@ -35,7 +35,7 @@
       </div>
     </header>
     <main id="main" class="main">{% block content %}{% endblock %}</main>
-    <footer class="page-footer">Kho &amp; Bán hàng <span>Quản lý theo từng lô hàng</span></footer>
+    <footer class="page-footer">Quản lý bán hàng <span>Quản lý theo từng lô hàng</span></footer>
   </div>
 </div>
 <script src="{{ url_for('static', filename='chung/phien.js') }}"></script>

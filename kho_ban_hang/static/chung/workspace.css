@@ -89,10 +89,6 @@ td{color:#485c77}tbody tr:hover td{background:#f9fbff}tr:last-child td{border-bo
 .metric-label,.stat-card .label{font-size:.875rem;color:#65758d;font-weight:500}.metric strong{font-size:2rem;line-height:1.3;color:#25456f}
 .metric-foot{font-size:.75rem;color:var(--muted);border-top:1px solid #edf1f6;padding-top:12px;line-height:1.6}.stat-card .val{font-size:1.5rem;font-weight:700;color:var(--accent)}
 .nav-symbol,.metric-icon{display:none}
-.warehouse-banner{position:relative;isolation:isolate;display:flex;align-items:center;overflow:hidden;height:auto;min-height:200px;margin-bottom:24px;padding:26px 30px;border:1px solid #dae4f2;border-radius:13px;background:#eaf0f9}
-.warehouse-banner>div{position:relative;z-index:1;max-width:72%}.warehouse-banner h2{font-size:1.5rem;color:#2c476e;line-height:1.4}
-.warehouse-banner p:not(.page-eyebrow){font-size:.875rem;color:#627b9b;margin:10px 0 18px;line-height:1.7}
-.warehouse-banner .button{font-size:.875rem}.warehouse-banner img{position:absolute;right:0;bottom:0;top:auto;width:330px;height:240px;object-fit:cover;margin:0;mix-blend-mode:multiply;mask-image:linear-gradient(90deg,transparent,#000 45%)}
 .dashboard-grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(290px,1fr);gap:22px;align-items:start}
 .dashboard-primary{display:grid;gap:22px;align-content:start;min-width:0}.attention{display:block}
 .alert-preview{padding:18px 0;border-top:1px solid var(--line)}.alert-preview strong{display:block;font-size:.875rem;margin:10px 0}.alert-preview p{font-size:.875rem;color:var(--muted);margin-top:10px;line-height:1.7}
@@ -160,7 +156,6 @@ button.filter-pill.active{border-color:#bdceef;background:#eaf0ff;color:#2455b7}
   .panel,.hop{padding:18px}.table-panel{padding:0}.table-panel>.section-head{padding:18px 18px 0}
   .filter-bar{padding:18px}.filter-bar label{flex:1 1 145px}.filter-bar .search-label{flex-basis:100%}.filter-bar button{flex:1 1 auto}
   .table-footer{padding:14px 18px}.metrics{gap:12px}.metric{padding:16px;gap:12px}.metric-label{font-size:.875rem}.metric strong{font-size:1.75rem}.metric-foot{font-size:.75rem;line-height:1.7}
-  .warehouse-banner{min-height:230px;padding:22px}.warehouse-banner>div{max-width:90%}.warehouse-banner h2{font-size:1.25rem}.warehouse-banner img{width:165px;height:180px;opacity:.24}
   .field-grid,.info-panel .field-grid,.alert-grid{grid-template-columns:1fr}.details{grid-template-columns:repeat(2,minmax(0,1fr))}.attention{display:block}
   .nav-tabs{display:flex}.stats-grid{grid-template-columns:1fr}.page-footer{padding:18px 16px}.page-footer span{display:none}
   #form-don .sales-product-picker{grid-template-columns:minmax(0,1fr) auto}#form-don .sales-product-picker>label{grid-column:1/-1}#form-don .sales-product-picker>div{width:145px!important}

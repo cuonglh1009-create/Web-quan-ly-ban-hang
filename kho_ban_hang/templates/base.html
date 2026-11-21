@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}"><meta name="color-scheme" content="light">
-<title>{% block title %}Kho &amp; Bán hàng{% endblock %}</title>
+<title>{% block title %}Quản lý bán hàng{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='chung/chung.css') }}">
 {% block css %}{% endblock %}
 <link rel="stylesheet" href="{{ url_for('static', filename='chung/workspace.css') }}">
@@ -13,7 +13,7 @@
 <a class="skip" href="#main">Đến nội dung</a>
 <div class="shell">
 <aside class="sidebar" id="sales-navigation">
-<a class="brand" href="/ban-hang"><span>Kho &amp; Bán hàng<small>Quản lý hoạt động cửa hàng</small></span></a>
+<a class="brand" href="/ban-hang"><span>Quản lý bán hàng<small>Quản lý hoạt động cửa hàng</small></span></a>
 <div class="nav-caption">BÁN HÀNG</div>
 <nav id="menu" aria-label="Menu chính"></nav>
 <div class="sidebar-bottom">Đơn hàng · Khách hàng · Doanh thu</div>
@@ -26,7 +26,7 @@
 <div class="account"><span><strong id="nguoi-dung"></strong><small>Nhân viên bán hàng</small></span><button id="nut-dang-xuat" class="quiet" type="button" hidden>Đăng xuất</button></div>
 </header>
 <main id="main" class="main">{% block content %}{% endblock %}</main>
-<footer class="page-footer">Kho &amp; Bán hàng <span>Quản lý công việc mỗi ngày</span></footer>
+<footer class="page-footer">Quản lý bán hàng <span>Quản lý công việc mỗi ngày</span></footer>
 </div></div>
 <script src="{{ url_for('static', filename='chung/phien.js') }}"></script>
 {% block js %}{% endblock %}

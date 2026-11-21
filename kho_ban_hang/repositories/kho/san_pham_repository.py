@@ -28,6 +28,17 @@ class SanPhamRepository(ITraCuuSanPham):
     def tim_tat_ca(self) -> list[SanPham]:
         return [self._tao(row) for row in self.ket_noi_db.execute(self._SELECT + " ORDER BY sp.ma_sp")]
 
+    def lay_nha_cung_cap_theo_san_pham(self) -> dict[str, str]:
+        rows = self.ket_noi_db.execute("""
+            SELECT ct.ma_sp, GROUP_CONCAT(DISTINCT n.ten_ncc) AS ten_ncc
+            FROM chi_tiet_phieu_nhap ct
+            JOIN phieu_nhap p ON ct.ma_phieu = p.ma_phieu
+            JOIN nha_cung_cap n ON p.ma_ncc = n.ma_ncc
+            WHERE p.trang_thai = 'DA_XAC_NHAN'
+            GROUP BY ct.ma_sp
+        """)
+        return {row["ma_sp"]: row["ten_ncc"] for row in rows}
+
     def tim_nhieu(self, ma_san_pham) -> dict[str, SanPham]:
         """Nạp theo lượt, không giữ cache qua các giao dịch."""
         cac_ma = sorted(set(ma_san_pham))

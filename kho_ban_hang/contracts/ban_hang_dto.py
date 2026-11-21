@@ -1,7 +1,7 @@
 from dataclasses import asdict, dataclass, field
 
 from kho_ban_hang.contracts.kho_contract import ChiTietDatHangDTO
-from kho_ban_hang.contracts.kiem_tra_dau_vao import chuoi_bat_buoc, so_nguyen
+from kho_ban_hang.contracts.kiem_tra_dau_vao import chuoi_bat_buoc, chuoi_tuy_chon, so_nguyen
 from kho_ban_hang.domain.errors_ban_hang import LoiDuLieu
 
 SO_LUONG_TOI_DA = 1_000_000   # giả định của TV2, chặn tràn số
@@ -24,9 +24,9 @@ class DuLieuLapDonDTO(_DTO):
     def tu_json(cls, d: dict) -> "DuLieuLapDonDTO":
         ma_kh = d.get("ma_kh")
         ma_kh = None if ma_kh in (None, "") else chuoi_bat_buoc(ma_kh, "ma_kh")
-        ten_kh = (d.get("ten_kh") or "").strip() or None
-        sdt_kh = (d.get("sdt_kh") or "").strip() or None
-        dia_chi_kh = (d.get("dia_chi_kh") or "").strip() or None
+        ten_kh = chuoi_tuy_chon(d.get("ten_kh"), "ten_kh", 160)
+        sdt_kh = chuoi_tuy_chon(d.get("sdt_kh"), "sdt_kh", 40)
+        dia_chi_kh = chuoi_tuy_chon(d.get("dia_chi_kh"), "dia_chi_kh", 500)
         raw = d.get("dong")
         if not isinstance(raw, list) or not raw:
             raise LoiDuLieu("DONG_RONG", "Đơn phải có ít nhất một dòng", "dong")

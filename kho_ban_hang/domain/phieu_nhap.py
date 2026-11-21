@@ -3,6 +3,7 @@ from datetime import date
 
 from .enums_kho import TrangThaiPhieuNhap
 from .errors import DuLieuKhongHopLeError, TrangThaiKhongHopLeError
+from .errors_kho import TrungMaLoError
 from .lo_hang import LoHang
 from .nha_cung_cap import NhaCungCap
 from .nhan_vien import NhanVien
@@ -48,6 +49,14 @@ class PhieuNhapKho:
         self.nha_cung_cap = nha_cung_cap
         self._trang_thai = TrangThaiPhieuNhap(trang_thai)
         self._chi_tiet = list(chi_tiet)
+        self._ma_lo = set()
+        for i, dong in enumerate(self._chi_tiet):
+            self._them_ma_lo(dong.lo_hang.ma_lo, i)
+
+    def _them_ma_lo(self, ma_lo, vi_tri):
+        if ma_lo in self._ma_lo:
+            raise TrungMaLoError("Mã lô bị lặp trong phiếu.", f"dong[{vi_tri}].ma_lo")
+        self._ma_lo.add(ma_lo)
 
     @property
     def trang_thai(self) -> TrangThaiPhieuNhap:
@@ -61,6 +70,7 @@ class PhieuNhapKho:
         if self.trang_thai != TrangThaiPhieuNhap.NHAP:
             raise TrangThaiKhongHopLeError("Chỉ có thể thêm dòng vào phiếu nháp.")
         chi_tiet.kiem_tra_hop_le(self.ngay_nhap, f"dong[{len(self.chi_tiet)}].")
+        self._them_ma_lo(chi_tiet.lo_hang.ma_lo, len(self._chi_tiet))
         self._chi_tiet.append(chi_tiet)
 
     def kiem_tra_truoc_xac_nhan(self, ngay_xac_nhan: date) -> None:

@@ -9,8 +9,11 @@ Api.khoiTao({ batBuoc: "NV_BAN_HANG" }).then(async () => {
     const tb = $("dong");
     for (const r of d.dong) {
       const tr = document.createElement("tr");
-      [r.ma_sp, r.so_luong, Api.tien(r.don_gia), Api.tien(r.thanh_tien)].forEach((v, i) => {
-        const td = document.createElement("td"); td.textContent = v; if (i) td.className = "so"; tr.append(td);
+      const product=document.createElement("td");
+      product.textContent=r.ten_sp || r.ma_sp;
+      const code=document.createElement("small");code.className="subline";code.textContent=r.ma_sp;product.append(code);tr.append(product);
+      [String(r.so_luong)+(r.don_vi_tinh ? " "+r.don_vi_tinh : ""), Api.tien(r.don_gia), Api.tien(r.thanh_tien)].forEach(v => {
+        const td=document.createElement("td");td.textContent=v;td.className="so";tr.append(td);
       });
       tb.append(tr);
     }
