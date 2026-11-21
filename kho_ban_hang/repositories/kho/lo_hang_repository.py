@@ -52,6 +52,22 @@ class LoHangRepository:
         ).fetchall()
         return list(zip(self._tao_nhieu(rows), (row["dang_giu"] for row in rows)))
 
+    def tim_theo_nhieu_san_pham(self, cac_ma):
+        """Chỉ đọc các lô thuộc tập sản phẩm được yêu cầu."""
+        result = []
+        codes = sorted(set(cac_ma))
+        for start in range(0, len(codes), 400):
+            group = codes[start:start+400]
+            placeholders = ",".join("?" for _ in group)
+            rows = self.ket_noi_db.execute(
+                """SELECT lo.*, COALESCE((SELECT SUM(g.so_luong) FROM giu_hang g
+                   WHERE g.ma_lo=lo.ma_lo),0) AS dang_giu
+                   FROM lo_hang lo WHERE lo.ma_sp IN (""" + placeholders + ") ORDER BY lo.ma_lo",
+                group,
+            ).fetchall()
+            result.extend(zip(self._tao_nhieu(rows), (row["dang_giu"] for row in rows)))
+        return result
+
     def ton_tai_ma_lo(self, ma_lo: str) -> bool:
         return self.ket_noi_db.execute("SELECT 1 FROM lo_hang WHERE ma_lo=?", (ma_lo,)).fetchone() is not None
 

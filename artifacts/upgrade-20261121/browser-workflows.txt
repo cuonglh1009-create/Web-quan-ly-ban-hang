@@ -1,0 +1,1 @@
+PASS: integrated auth, warehouse desktop/mobile, receipt create/confirm, receipt list, lot names/supplier, search, product filter, alerts, logout, sales order/payment/invoice using real IKho.

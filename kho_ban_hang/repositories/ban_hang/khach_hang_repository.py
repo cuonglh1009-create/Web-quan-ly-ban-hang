@@ -1,4 +1,6 @@
 from datetime import date
+from ..phan_trang import lay_trang
+from ..tim_kiem import chuan_hoa
 
 from kho_ban_hang.domain.khach_hang import KhachHang, KhachThuong, KhachVIP
 
@@ -48,7 +50,7 @@ class KhachHangRepository:
         n = self.db.execute("SELECT gia_tri FROM bo_dem_ma WHERE ten='khach_hang'").fetchone()[0]
         return f"KH{n:03d}"
 
-    def tim_tat_ca(self) -> list[dict]:
+    def tim_tat_ca(self, page=None, page_size=20) -> list[dict]:
         sql = """
             SELECT kh.ma_kh, kh.ho_ten, kh.so_dien_thoai, kh.dia_chi,
                    kh.diem_tich_luy, kh.hang, kh.ngay_len_hang,
@@ -60,14 +62,16 @@ class KhachHangRepository:
             GROUP BY kh.ma_kh
             ORDER BY kh.ma_kh
         """
+        if page is not None:
+            return lay_trang(self.db, sql, (), page, page_size)
         rows = self.db.execute(sql).fetchall()
         return [dict(r) for r in rows]
 
-    def tra_cuu(self, tu_khoa: str) -> list[dict]:
+    def tra_cuu(self, tu_khoa: str, page=None, page_size=20) -> list[dict]:
         tu_khoa = (tu_khoa or "").strip()
         if not tu_khoa:
-            return self.tim_tat_ca()
-        like = f"%{tu_khoa}%"
+            return self.tim_tat_ca(page, page_size)
+        like = chuan_hoa(tu_khoa)
         sql = """
             SELECT DISTINCT kh.ma_kh, kh.ho_ten, kh.so_dien_thoai, kh.dia_chi,
                    kh.diem_tich_luy, kh.hang, kh.ngay_len_hang,
@@ -83,15 +87,17 @@ class KhachHangRepository:
                 GROUP BY dh2.ma_kh
             ) sub ON kh.ma_kh = sub.ma_kh
             LEFT JOIN don_hang dh ON kh.ma_kh = dh.ma_kh
-            WHERE kh.ma_kh LIKE ? OR kh.ho_ten LIKE ? OR kh.so_dien_thoai LIKE ? OR dh.ma_don LIKE ?
+            WHERE instr(chuan_hoa(kh.ma_kh || ' ' || kh.ho_ten || ' ' || kh.so_dien_thoai || ' ' || COALESCE(dh.ma_don,'')),?)>0
             ORDER BY kh.ma_kh
         """
-        rows = self.db.execute(sql, (like, like, like, like)).fetchall()
+        if page is not None:
+            return lay_trang(self.db, sql, (like,), page, page_size)
+        rows = self.db.execute(sql, (like,)).fetchall()
         return [dict(r) for r in rows]
 
     def lay_lich_su_don_hang(self, ma_kh: str) -> list[dict]:
         sql = """
-            SELECT dh.ma_don, dh.ngay_lap, dh.trang_thai, dh.giam_hang_khach, dh.giam_khuyen_mai,
+            SELECT dh.ma_don, dh.ma_nv, dh.ngay_lap, dh.trang_thai, dh.giam_hang_khach, dh.giam_khuyen_mai,
                    COALESCE(hd.tong_thanh_toan, MAX(0, COALESCE(ct.tam_tinh,0)-dh.giam_hang_khach-dh.giam_khuyen_mai)) AS tong_thanh_toan,
                    nv.ho_ten AS ten_nv
             FROM don_hang dh

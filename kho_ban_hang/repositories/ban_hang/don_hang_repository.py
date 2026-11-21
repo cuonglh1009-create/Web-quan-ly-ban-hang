@@ -1,4 +1,6 @@
 from datetime import date
+from ..phan_trang import lay_trang
+from ..tim_kiem import chuan_hoa
 
 from kho_ban_hang.domain.don_hang import ChiTietDonHang, DonHang
 from kho_ban_hang.domain.enums_chung import TrangThaiDonHang
@@ -37,16 +39,17 @@ class DonHangRepository:
         n = max(max_hien_tai, dem_hien_tai) + 1
         return f"DH{n:06d}"
 
-    def lay_danh_sach(self, trang_thai: str | None = None, tu_khoa: str | None = None) -> list[dict]:
+    def lay_danh_sach(self, trang_thai: str | None = None, tu_khoa: str | None = None, page=None, page_size=20, ma_nv=None) -> list[dict]:
         params = []
         where_clauses = []
         if trang_thai:
             where_clauses.append("dh.trang_thai = ?")
             params.append(trang_thai)
         if tu_khoa:
-            like = f"%{tu_khoa.strip()}%"
-            where_clauses.append("(dh.ma_don LIKE ? OR kh.ho_ten LIKE ? OR kh.so_dien_thoai LIKE ?)")
-            params.extend([like, like, like])
+            where_clauses.append("instr(chuan_hoa(dh.ma_don || ' ' || COALESCE(kh.ho_ten,'') || ' ' || COALESCE(kh.so_dien_thoai,'')),?)>0")
+            params.append(chuan_hoa(tu_khoa))
+        if ma_nv:
+            where_clauses.append("dh.ma_nv = ?");params.append(ma_nv)
         where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
         sql = f"""
             SELECT dh.ma_don, dh.ngay_lap, dh.trang_thai, dh.giam_hang_khach, dh.giam_khuyen_mai,
@@ -67,6 +70,8 @@ class DonHangRepository:
             {where_sql}
             ORDER BY dh.ngay_lap DESC, dh.ma_don DESC
         """
+        if page is not None:
+            return lay_trang(self.db, sql, params, page, page_size)
         rows = self.db.execute(sql, params).fetchall()
         return [dict(r) for r in rows]
 
@@ -115,9 +120,10 @@ class DonHangRepository:
         if r is None:
             return None
         chi_tiet = []
-        for c in self.db.execute("SELECT * FROM chi_tiet_don_hang WHERE ma_don=? ORDER BY rowid",
-                                 (ma_don,)):
-            sp = self.sp.tim_theo_ma(c["ma_sp"])
+        rows = self.db.execute("SELECT * FROM chi_tiet_don_hang WHERE ma_don=? ORDER BY rowid", (ma_don,)).fetchall()
+        products = self.sp.tim_nhieu(row["ma_sp"] for row in rows)
+        for c in rows:
+            sp = products[c["ma_sp"]]
             chi_tiet.append(ChiTietDonHang(sp, c["so_luong"], c["don_gia"]))  # giá đã chốt
         return DonHang(
             r["ma_don"], date.fromisoformat(r["ngay_lap"]), TrangThaiDonHang(r["trang_thai"]),

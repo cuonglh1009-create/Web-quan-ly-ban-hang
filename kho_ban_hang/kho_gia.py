@@ -18,6 +18,9 @@ class SanPhamGia(ITraCuuSanPham):
     def __init__(self, san_pham: list[SanPham] | None = None):
         self.ds = {s.ma_sp: s for s in (san_pham or [])}
 
+    def tim_tat_ca(self):
+        return list(self.ds.values())
+
     def tim_theo_ma(self, ma_sp):
         if ma_sp not in self.ds:
             raise KhongTimThayError(f"Không tìm thấy sản phẩm {ma_sp}.", "ma_sp")

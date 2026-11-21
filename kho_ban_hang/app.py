@@ -33,6 +33,8 @@ PHUONG_THUC_GHI = {"POST", "PUT", "PATCH", "DELETE"}
 def tao_schema(db: sqlite3.Connection) -> None:
     db.executescript((GOC / "schema_ban_hang.sql").read_text(encoding="utf-8"))
     db.executescript((GOC / "repositories" / "kho" / "schema_kho.sql").read_text(encoding="utf-8"))
+    from kho_ban_hang.repositories.migrations import nang_cap_chi_muc
+    nang_cap_chi_muc(db)
 
 
 def create_app(cau_hinh: CauHinh | None = None, kho_gia=None, tra_cuu_gia=None, dong_ho=None) -> Flask:
@@ -114,6 +116,23 @@ def create_app(cau_hinh: CauHinh | None = None, kho_gia=None, tra_cuu_gia=None, 
         with closing(mo_ket_noi(cau_hinh.duong_dan_csdl)) as db:
             tao_schema(db)
         click.echo("Đã tạo schema.")
+
+    @app.cli.command("nang-cap-csdl")
+    def lenh_nang_cap_csdl():
+        """Sao lưu trước, chỉ bổ sung chỉ mục; không seed hay đổi dữ liệu nghiệp vụ."""
+        from datetime import datetime, timezone
+        from uuid import uuid4
+        from kho_ban_hang.repositories.migrations import nang_cap_chi_muc
+        source = Path(cau_hinh.duong_dan_csdl).resolve()
+        if not source.is_file():
+            raise click.ClickException("Không tìm thấy CSDL hiện tại.")
+        backup = source.with_name(source.stem + ".backup-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid4().hex[:6] + source.suffix)
+        with closing(mo_ket_noi(str(source))) as db:
+            with closing(sqlite3.connect(str(backup))) as copy:
+                db.backup(copy)
+            nang_cap_chi_muc(db)
+        click.echo("Đã sao lưu: " + str(backup))
+        click.echo("Đã nâng cấp chỉ mục; dữ liệu nghiệp vụ được giữ nguyên.")
 
     @app.cli.command("seed")
     @click.option("--mat-khau-kho", prompt=True, hide_input=True, confirmation_prompt=True)

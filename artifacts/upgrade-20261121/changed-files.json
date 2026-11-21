@@ -1,0 +1,152 @@
+[
+  {
+    "file": "kho_ban_hang/app.py",
+    "status": "modified",
+    "sha256": "e1598ffd93401889a2566a2f840c4042551b8e7c1e0eb69820a8370a2e7797fa"
+  },
+  {
+    "file": "kho_ban_hang/kho_gia.py",
+    "status": "modified",
+    "sha256": "ac0db8f14d83b579538f221bfcb3674abc42bc048b222c45bc35a0c64c9c3723"
+  },
+  {
+    "file": "kho_ban_hang/contracts/san_pham_contract.py",
+    "status": "modified",
+    "sha256": "338bf9c4bfbc26feb9ad2dea1627b71e92e7b23e85bdde3f595ffac33bb0d38a"
+  },
+  {
+    "file": "kho_ban_hang/controllers/ban_hang_controller.py",
+    "status": "modified",
+    "sha256": "409683cf0a4e56b6b297b5e71233faa4af80f8956796532d7070300b7619d906"
+  },
+  {
+    "file": "kho_ban_hang/controllers/kho_controller.py",
+    "status": "modified",
+    "sha256": "13bec5b16e939f7bb5199b675c7c26a858bbf53f6961afba4138d383a01eb055"
+  },
+  {
+    "file": "kho_ban_hang/domain/don_hang.py",
+    "status": "modified",
+    "sha256": "1186248f5345e182ed7d276b8a030bebe11051fb74865a8fe4452af69046fff1"
+  },
+  {
+    "file": "kho_ban_hang/repositories/giao_dich.py",
+    "status": "modified",
+    "sha256": "867f9c1bd6452dbdb341ed52b5e50983dd55caf02af011fd3bfed8157b0ba7f8"
+  },
+  {
+    "file": "kho_ban_hang/repositories/migrations.py",
+    "status": "new",
+    "sha256": "d5ea07b9775d89c9a7ab254fdacdde743e4ed52fe4370d5e5fd0a43d0ed0a15b"
+  },
+  {
+    "file": "kho_ban_hang/repositories/phan_trang.py",
+    "status": "new",
+    "sha256": "865b2af7ce70462f8a2a20cff29ca52dd75389f2a09e34517a351f35f2d3070a"
+  },
+  {
+    "file": "kho_ban_hang/repositories/tim_kiem.py",
+    "status": "new",
+    "sha256": "d0afacd345d15378d09b658403f5986a4d803d642aa212e3583536f41e875439"
+  },
+  {
+    "file": "kho_ban_hang/web/ban_hang_routes.py",
+    "status": "modified",
+    "sha256": "68938ac0427d98e27995e830d50f7cdeb054a9927839e4af862de46f0b0ae35d"
+  },
+  {
+    "file": "kho_ban_hang/web/kho_routes.py",
+    "status": "modified",
+    "sha256": "d78fbcc71ec81d87e80ca9d53d31da37061ed1a1190a3b0330ebdbe00d3acd29"
+  },
+  {
+    "file": "kho_ban_hang/templates/kho/danh_sach_phieu.html",
+    "status": "modified",
+    "sha256": "af15e51196c59dc83b4c3e095cf66c64512b15b33a34f936491148523a11c704"
+  },
+  {
+    "file": "kho_ban_hang/static/ban_hang/index.js",
+    "status": "modified",
+    "sha256": "b811a817681bff2e87968d238c5f33b9afa071399fe6470683b3240bc5da8e2c"
+  },
+  {
+    "file": "kho_ban_hang/static/chung/phien.js",
+    "status": "modified",
+    "sha256": "5e0d37654eb769f6881151372a7c0303972af93e0c563913b36c6c8383af6a66"
+  },
+  {
+    "file": "kho_ban_hang/static/chung/workspace.css",
+    "status": "modified",
+    "sha256": "f694a4a700721900052ea44dbc9d4603d79664608184fdad2c9c4b03c0fcec57"
+  },
+  {
+    "file": "kho_ban_hang/static/kho/kho.js",
+    "status": "modified",
+    "sha256": "34648544f369d9479a82f6302ef2e93410e21b42321605cda98cbf6c702c0416"
+  },
+  {
+    "file": "kho_ban_hang/services/ban_hang/ban_hang_service.py",
+    "status": "modified",
+    "sha256": "1e41573174ff83798733698a022b57d037b0702abbb6d9fbbdc3318d1c9134e2"
+  },
+  {
+    "file": "kho_ban_hang/services/kho/kho_service.py",
+    "status": "modified",
+    "sha256": "4565e564a26e851880e106abc59251d4510517b2d329a4fdb5d09915dfe617e0"
+  },
+  {
+    "file": "kho_ban_hang/repositories/ban_hang/don_hang_repository.py",
+    "status": "modified",
+    "sha256": "3dfb46c44ed519c91b7d7bde3f373b176c295e060240b5ae657f07cf63945fc9"
+  },
+  {
+    "file": "kho_ban_hang/repositories/ban_hang/khach_hang_repository.py",
+    "status": "modified",
+    "sha256": "b0b7b5f917e206edbf2cdef6be907ce916204009ca6e18253ce72e2dfa70eb45"
+  },
+  {
+    "file": "kho_ban_hang/repositories/kho/kho_truy_van_repository.py",
+    "status": "modified",
+    "sha256": "3ca47dbc39626800ac9d095b4689328279bb46fe336aff6556ac255feeba5f2c"
+  },
+  {
+    "file": "kho_ban_hang/repositories/kho/lo_hang_repository.py",
+    "status": "modified",
+    "sha256": "454cc020e5094f72373bbbb5eb5a7b130ffffc948e6ea8d2f67fef801f6c2a49"
+  },
+  {
+    "file": "tests/test_giao_dien.py",
+    "status": "modified",
+    "sha256": "c770b7279ca273ff03a228172a0a7037e20ad18d1c023fc446447003dbc7eb6f"
+  },
+  {
+    "file": "tests/test_phan_trang_va_hieu_nang.py",
+    "status": "new",
+    "sha256": "5872b3296924e9b0429bf7cd7e977cdd6c98f4542878990849c300a5cd60d701"
+  },
+  {
+    "file": "tests/browser/pagination.cjs",
+    "status": "new",
+    "sha256": "de91633d7dbbead053757558ae63e7e108aab510b5f041ca58bd5cb61d0d0493"
+  },
+  {
+    "file": "tests/browser/pagination_bridge.py",
+    "status": "new",
+    "sha256": "d044da3f0dd2a8736a9696399769f60560d470440c37e98b34caac22445d859b"
+  },
+  {
+    "file": "tests/browser/tv1_integrated_bridge.py",
+    "status": "new",
+    "sha256": "974515b49478ad3d37503d8166ae991643fb4db4799f91fe66f90a14fcea7b90"
+  },
+  {
+    "file": "tests/browser/workflows.cjs",
+    "status": "new",
+    "sha256": "1d15131b25e5e86ae39b50d2d3129600eade6ce07e53cb41fa3dd2395079a4e1"
+  },
+  {
+    "file": "scripts/benchmark.py",
+    "status": "new",
+    "sha256": "b2beff262dbeb824bf1167bb2a4cec94d2a221ee509834265b5bf69052188bea"
+  }
+]

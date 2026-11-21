@@ -42,7 +42,10 @@ class DuLieuGiaoDienTest(unittest.TestCase):
                     self.assertIsNotNone(match)
                     self.assertGreater(match.start(), html.index("<body"))
                     data = json.loads(match.group(1))
-                    self.assertTrue(any(sp["ma_sp"] == "SP02" for sp in data["san_pham"]))
+                    if path in ("/kho/lo-hang", "/kho"):
+                        self.assertIn("so_ngay_canh_bao", data)
+                    else:
+                        self.assertTrue(any(sp["ma_sp"] == "SP02" for sp in data["san_pham"]))
 
 
     def test_bon_trang_ban_hang_doc_lap_va_don_khach_le(self):

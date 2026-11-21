@@ -1,0 +1,26 @@
+{
+  "dataset": {
+    "products": 1000,
+    "lots": 10000,
+    "orders": 1000,
+    "customers": 1003,
+    "receipts": 1000
+  },
+  "paged": false,
+  "measurements": {
+    "lots": {
+      "median_ms": 100.59,
+      "selects": 4,
+      "json_bytes": 1729782,
+      "rows": 10000
+    }
+  },
+  "query_plans": [
+    {
+      "id": 3,
+      "parent": 0,
+      "notused": 62,
+      "detail": "SEARCH lo_hang USING INDEX idx_lo_hang_ma_sp (ma_sp=?)"
+    }
+  ]
+}

@@ -42,9 +42,9 @@ class KhoService(IKho):
             raise KhongTimThayError(f"Không tìm thấy sản phẩm {ma}.", "ma_sp")
         ket_qua = dict.fromkeys(cac_ma, 0)
         # Dùng lại quy tắc khả dụng của Kho; không giữ cache qua giao dịch.
-        for dong in self.tra_cuu_lo_hang(BoLocLoDTO()):
-            if dong.ma_sp in ket_qua:
-                ket_qua[dong.ma_sp] += dong.kha_dung
+        ngay = date.today()
+        for lo, dang_giu in self.lo_hang_repo.tim_theo_nhieu_san_pham(cac_ma):
+            ket_qua[lo.san_pham.ma_sp] += self._kha_dung(lo, dang_giu, ngay)
         return ket_qua
 
     def chon_lo_xuat(self, ma_sp: str, so_luong: int, ngay: date) -> list[tuple[LoHang, int]]:

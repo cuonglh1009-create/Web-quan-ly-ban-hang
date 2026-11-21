@@ -9,6 +9,9 @@
     <button type="submit">Tìm kiếm</button>{% if q or status %}<a class="text-link" href="{{ url_for('kho.danh_sach_phieu') }}">Xóa lọc</a>{% endif %}
   </form>
   {% include "kho/_phieu_table.html" %}
-  <div class="table-footer">{{ phieu_list|length }} phiếu phù hợp</div>
+  <div class="table-footer"><span>{{ pager.total }} phiếu phù hợp · Trang {{ pager.page }}/{{ pager.pages }}</span><div class="pagination">
+{% if pager.page>1 %}<a class="button secondary" href="{{ url_for('kho.danh_sach_phieu',q=q,trang_thai=status,page=pager.page-1,page_size=pager.page_size) }}">Trang trước</a>{% endif %}
+{% if pager.page<pager.pages %}<a class="button secondary" href="{{ url_for('kho.danh_sach_phieu',q=q,trang_thai=status,page=pager.page+1,page_size=pager.page_size) }}">Trang sau</a>{% endif %}
+</div></div>
 </section>
 {% endblock %}

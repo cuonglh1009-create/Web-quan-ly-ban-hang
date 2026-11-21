@@ -31,6 +31,9 @@ function hienLoi(loi, form) {
       : form.elements.namedItem(loi.truong);
     if (field?.focus) {
       field.setAttribute("aria-invalid", "true");
+      let detail=field.parentElement.querySelector("[data-field-error]");
+      if(!detail){detail=document.createElement("span");detail.className="loi-truong";detail.dataset.fieldError="";detail.id="receipt-error-"+field.name;field.parentElement.append(detail);}
+      detail.textContent=loi.message;field.setAttribute("aria-describedby",detail.id);
       field.focus();
       return;
     }
@@ -63,26 +66,12 @@ function lotStatus(row) {
   return ["Còn khả dụng", "success", "con_hang"];
 }
 
-function tongHopTon(lots) {
-  const totals = new Map();
-  for (const lot of lots) {
-    const total = totals.get(lot.ma_sp) || {actual:0, reserved:0, available:0};
-    total.actual += lot.ton_thuc_te;
-    total.reserved += lot.dang_giu;
-    total.available += lot.kha_dung;
-    totals.set(lot.ma_sp, total);
-  }
-  return totals;
-}
-
-function hienTonTheoSanPham(lots) {
+function hienTonTheoSanPham(rows) {
   const tbody = document.querySelector("[data-stock-overview]");
   if (!tbody) return;
-  const totals = tongHopTon(lots);
   tbody.replaceChildren();
-  const rows = [...products.values()].sort((a,b) => a.ten_sp.localeCompare(b.ten_sp,"vi"));
   for (const product of rows.slice(0,8)) {
-    const total = totals.get(product.ma_sp) || {actual:0,reserved:0,available:0};
+    const total = product;
     const tr = tbody.insertRow();
     const title = cell(tr, product.ten_sp);
     const code = title.appendChild(document.createElement("small"));
@@ -100,12 +89,12 @@ function hienTonTheoSanPham(lots) {
 }
 
 async function dashboard(section) {
-  const [lots, alerts] = await Promise.all([goiApi(api + "/lo-hang"), goiApi(api + "/canh-bao")]);
-  hienThi("[data-lots]",number.format(lots.length),section);
-  hienThi("[data-available]",number.format([...tongHopTon(lots).values()].filter(p => p.available > 0).length),section);
-  hienThi("[data-low]",number.format(alerts.ton_thap.length),section);
-  hienThi("[data-reserved-lots]",number.format(lots.filter(lot=>lot.dang_giu>0).length),section);
-  hienTonTheoSanPham(lots);
+  const alerts=await goiApi(api+"/tong-quan");
+  hienThi("[data-lots]",number.format(alerts.lots),section);
+  hienThi("[data-available]",number.format(alerts.available_products),section);
+  hienThi("[data-low]",number.format(alerts.low_products),section);
+  hienThi("[data-reserved-lots]",number.format(alerts.reserved_lots),section);
+  hienTonTheoSanPham(alerts.san_pham);
   section.setAttribute("aria-busy","false");
   hienThi("[data-dashboard-updated]","Cập nhật lúc " + new Date().toLocaleTimeString("vi-VN"));
   const preview = document.querySelector("[data-alert-preview]");
@@ -116,7 +105,7 @@ async function dashboard(section) {
     item.className = "alert-preview";
     item.append(badge(warning.ma_lo ? "Sắp hết hạn" : "Tồn thấp", warning.ma_lo ? "neutral" : "pending"));
     const title = item.appendChild(document.createElement("strong"));
-    title.textContent = (products.get(warning.ma_sp)?.ten_sp || warning.ma_sp) + (warning.ma_lo ? " · " + warning.ma_lo : "");
+    title.textContent = (warning.ten_sp || products.get(warning.ma_sp)?.ten_sp || warning.ma_sp) + (warning.ma_lo ? " · " + warning.ma_lo : "");
     const action = item.appendChild(document.createElement("a"));
     action.className = "text-link"; action.textContent = "Kiểm tra lô liên quan";
     action.href = "/kho/lo-hang?" + new URLSearchParams(warning.ma_lo ? {ma_lo:warning.ma_lo}:{ma_sp:warning.ma_sp});
@@ -142,6 +131,8 @@ function formPhieu(form) {
   });
   form.addEventListener("input", ({ target }) => {
     target.removeAttribute("aria-invalid");
+    const detail=target.parentElement.querySelector("[data-field-error]");
+    if(detail)detail.textContent="";
     const quantity = Number(row.elements.so_luong_nhap.value) || 0;
     const price = Api.docTien(row.elements.gia_nhap.value) || 0;
     row.elements.gia_nhap.setCustomValidity("");
@@ -226,32 +217,23 @@ async function chiTietPhieu(section) {
 }
 
 async function danhSachLo(section) {
-  const form = section.querySelector("form");
-  const summary = section.querySelector("[data-lot-summary]");
-  const tbody = section.querySelector("tbody");
-  const params = new URLSearchParams(location.search);
-  form.elements.q.value = params.get("q") || params.get("ma_lo") || params.get("ma_sp") || "";
-  form.elements.tinh_trang.value = params.get("tinh_trang") || "";
-  const lots = await goiApi(api + "/lo-hang");
-  const searchIndex = new Map(lots.map(item => [item.ma_lo, normalize(
-    [item.ma_lo,item.ma_sp,products.get(item.ma_sp)?.ten_sp,catalog.nha_cung_cap_theo_lo?.[item.ma_lo]].join(" ")
-  )]));
-  const exactProduct = params.get("ma_sp");
-  const exactLot = params.get("ma_lo");
-  let page = 1;
-  let result = [];
-  const perPage = 10;
-  function render() {
+  const form=section.querySelector("form"),summary=section.querySelector("[data-lot-summary]"),tbody=section.querySelector("tbody");
+  const params=new URLSearchParams(location.search),exactProduct=params.get("ma_sp"),exactLot=params.get("ma_lo");
+  form.elements.q.value=params.get("q")||exactProduct||exactLot||"";
+  form.elements.tinh_trang.value=params.get("tinh_trang")||"";
+  let page=Math.max(1,Number(params.get("page"))||1),result=[],meta=null,request=null,timer;
+  const perPage=10,prev=section.querySelector("[data-prev]"),next=section.querySelector("[data-next]");
+  function render(){
     tbody.replaceChildren();
-    for (const item of result.slice((page-1)*perPage, page*perPage)) {
+    for (const item of result) {
       const tr = tbody.insertRow();
       const lot = cell(tr, item.ma_lo, "nowrap");
       const entered = lot.appendChild(document.createElement("small"));
       entered.className = "subline"; entered.textContent = "Nhập " + dateText(item.ngay_nhap);
-      const product = cell(tr, products.get(item.ma_sp)?.ten_sp || item.ma_sp);
+      const product = cell(tr, item.ten_sp || products.get(item.ma_sp)?.ten_sp || item.ma_sp);
       const code = product.appendChild(document.createElement("small"));
       code.className = "subline"; code.textContent = item.ma_sp;
-      cell(tr, catalog.nha_cung_cap_theo_lo?.[item.ma_lo] || "Chưa ghi nhận");
+      cell(tr, item.nha_cung_cap || "Chưa ghi nhận");
       const expiry = cell(tr, dateText(item.han_su_dung), "nowrap");
       if (item.ngay_san_xuat) {
         const made = expiry.appendChild(document.createElement("small"));
@@ -263,37 +245,41 @@ async function danhSachLo(section) {
       const [label, style] = lotStatus(item);
       cell(tr, "").append(badge(label, style));
     }
-    if (!result.length) cell(tbody.insertRow(), "Không có lô hàng phù hợp.").colSpan = 8;
-    const totalPages = Math.max(1, Math.ceil(result.length / perPage));
-    section.querySelector("[data-page]").textContent = page + " / " + totalPages;
-    section.querySelector("[data-prev]").disabled = page === 1;
-    section.querySelector("[data-next]").disabled = page === totalPages;
-    summary.textContent = result.length ? (page-1)*perPage+1 + "–" + Math.min(page*perPage,result.length) + " trên " + result.length + " lô hàng" : "Không tìm thấy lô hàng";
+
+    if(!result.length)cell(tbody.insertRow(),"Không có lô hàng phù hợp.","empty").colSpan=8;
+    page=meta.page;
+    const actual=new URL(location.href);actual.searchParams.set("page",page);history.replaceState(null,"",actual.pathname+actual.search);
+    section.querySelector("[data-page]").textContent=page+" / "+meta.pages;
+    prev.disabled=page<=1;next.disabled=page>=meta.pages;
+    summary.textContent=meta.total?((page-1)*perPage+1)+"–"+Math.min(page*perPage,meta.total)+" trên "+meta.total+" lô hàng":"Không tìm thấy lô hàng";
   }
-  function filter() {
-    const term = normalize(form.elements.q.value);
-    const status = form.elements.tinh_trang.value;
-    result = lots.filter(item => {
-      const matches = exactProduct && term === normalize(exactProduct) ? item.ma_sp === exactProduct :
-        exactLot && term === normalize(exactLot) ? item.ma_lo === exactLot : searchIndex.get(item.ma_lo).includes(term);
-      return matches && (!status || (status==="dang_giu" ? item.dang_giu>0 : lotStatus(item)[2]===status));
-    });
-    page = 1;
-    const query = new URLSearchParams();
-    if (exactProduct && term === normalize(exactProduct)) query.set("ma_sp",exactProduct);
-    else if (exactLot && term === normalize(exactLot)) query.set("ma_lo",exactLot);
-    else if (form.elements.q.value.trim()) query.set("q",form.elements.q.value.trim());
-    if (status) query.set("tinh_trang",status);
-    history.replaceState(null,"",location.pathname+(query.size ? "?"+query : ""));
-    render();
+  async function load(target=1){
+    clearTimeout(timer);request?.abort();const active=new AbortController();request=active;
+    const query=new URLSearchParams(),term=form.elements.q.value.trim();
+    if(exactProduct && normalize(term)===normalize(exactProduct))query.set("ma_sp",exactProduct);
+    else if(exactLot && normalize(term)===normalize(exactLot))query.set("ma_lo",exactLot);
+    else if(term)query.set("q",term);
+    if(form.elements.tinh_trang.value)query.set("tinh_trang",form.elements.tinh_trang.value);
+    query.set("page",target);query.set("page_size",perPage);
+    history.replaceState(null,"",location.pathname+"?"+query);
+    prev.disabled=next.disabled=true;tbody.replaceChildren();cell(tbody.insertRow(),"Đang tải lô hàng…","empty").colSpan=8;
+    section.setAttribute("aria-busy","true");hienLoi(null);
+    try{
+      const response=await goiApi(api+"/lo-hang?"+query,{signal:active.signal});
+      if(active.signal.aborted)return;
+      meta=Array.isArray(response)?{items:response,total:response.length,page:1,pages:1}:response;
+      result=meta.items;render();
+    }catch(error){
+      if(active.signal.aborted || error.name==="AbortError")return;
+      hienLoi(error);tbody.replaceChildren();cell(tbody.insertRow(),"Không tải được dữ liệu. Hãy bấm Tìm kiếm để thử lại.","empty").colSpan=8;summary.textContent="Chưa tải được dữ liệu";
+    }finally{if(!active.signal.aborted)section.setAttribute("aria-busy","false");}
   }
-  form.addEventListener("submit",event=>{event.preventDefault();filter();});
-  form.elements.q.addEventListener("input",filter);
-  form.elements.tinh_trang.addEventListener("change",filter);
-  form.addEventListener("reset",()=>setTimeout(filter,0));
-  section.querySelector("[data-prev]").addEventListener("click",()=>{page--;render();});
-  section.querySelector("[data-next]").addEventListener("click",()=>{page++;render();});
-  filter();
+  form.addEventListener("submit",event=>{event.preventDefault();load();});
+  form.elements.q.addEventListener("input",()=>{clearTimeout(timer);timer=setTimeout(()=>load(),250);});
+  form.elements.tinh_trang.addEventListener("change",()=>load());
+  form.addEventListener("reset",()=>setTimeout(()=>load(),0));
+  prev.addEventListener("click",()=>load(page-1));next.addEventListener("click",()=>load(page+1));
+  await load(page);
 }
 
 async function danhSachCanhBao(section) {
@@ -341,7 +327,7 @@ async function danhSachSanPham(section) {
   status.addEventListener("change",filter);
   category.addEventListener("change",filter);
   filter();
-  const totals = tongHopTon(await goiApi(api + "/lo-hang"));
+  const totals = new Map((await goiApi(api + "/ton-san-pham")).map(row=>[row.ma_sp,row]));
   for (const row of rows) row.querySelector("[data-product-available]").textContent = number.format(totals.get(row.dataset.code)?.available || 0);
 }
 

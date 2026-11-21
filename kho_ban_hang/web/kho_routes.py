@@ -1,3 +1,4 @@
+from ..repositories.phan_trang import doc_phan_trang
 from dataclasses import asdict, is_dataclass
 from datetime import date, datetime
 
@@ -84,9 +85,9 @@ def tao_kho_blueprint(lay_controller, lay_ma_phien, kiem_tra_csrf, endpoint_dang
     @bp.get("/kho")
     def index():
         return trang("index", lambda c: {
-            "phieu_list": c.danh_sach_phieu(lay_ma_phien())[:5],
+            "phieu_list": c.danh_sach_phieu(lay_ma_phien(), page=1, page_size=5)["items"],
             "ngay_hom_nay": date.today().strftime("%d/%m/%Y"),
-            "danh_muc": c.du_lieu_giao_dien(lay_ma_phien()),
+            "danh_muc": {"so_ngay_canh_bao": c.kho.cau_hinh.so_ngay_canh_bao},
         })
 
     @bp.get("/kho/phieu-nhap/moi")
@@ -103,9 +104,11 @@ def tao_kho_blueprint(lay_controller, lay_ma_phien, kiem_tra_csrf, endpoint_dang
         status = request.args.get("trang_thai", "")
         if status not in ("", "NHAP", "DA_XAC_NHAN"):
             status = ""
-        return trang("danh_sach_phieu", lambda c: {
-            "phieu_list": c.danh_sach_phieu(lay_ma_phien(), q, status), "q": q, "status": status,
-        })
+        page, size = doc_phan_trang(request.args)
+        def prepare(c):
+            result = c.danh_sach_phieu(lay_ma_phien(), q, status, page or 1, size)
+            return {"phieu_list": result["items"], "pager": result, "q": q, "status": status}
+        return trang("danh_sach_phieu", prepare)
 
     @bp.get("/kho/san-pham")
     def san_pham():
@@ -117,7 +120,7 @@ def tao_kho_blueprint(lay_controller, lay_ma_phien, kiem_tra_csrf, endpoint_dang
 
     @bp.get("/kho/lo-hang")
     def lo_hang():
-        return trang("lo_hang", lambda c: {"danh_muc": c.du_lieu_giao_dien(lay_ma_phien())})
+        return trang("lo_hang", lambda c: {"danh_muc": {"so_ngay_canh_bao": c.kho.cau_hinh.so_ngay_canh_bao}})
 
     @bp.get("/kho/canh-bao")
     def canh_bao():
@@ -146,7 +149,21 @@ def tao_kho_blueprint(lay_controller, lay_ma_phien, kiem_tra_csrf, endpoint_dang
     @bp.get("/api/kho/lo-hang")
     def api_lo_hang():
         loc = BoLocLoDTO(request.args.get("ma_lo", "").strip() or None, request.args.get("ma_sp", "").strip() or None)
+        page, size = doc_phan_trang(request.args)
+        if page is not None:
+            return jsonify(du_lieu=lay_controller().trang_lo_hang(
+                lay_ma_phien(), q=request.args.get("q", "")[:120],
+                tinh_trang=request.args.get("tinh_trang", ""), ma_lo=loc.ma_lo, ma_sp=loc.ma_sp,
+                page=page, page_size=size))
         return jsonify(du_lieu=_json_hoa(lay_controller().theo_doi_lo_hang(lay_ma_phien(), loc)))
+
+    @bp.get("/api/kho/ton-san-pham")
+    def api_ton_san_pham():
+        return jsonify(du_lieu=lay_controller().ton_san_pham(lay_ma_phien()))
+
+    @bp.get("/api/kho/tong-quan")
+    def api_tong_quan():
+        return jsonify(du_lieu=lay_controller().tong_quan(lay_ma_phien()))
 
     @bp.get("/api/kho/canh-bao")
     def api_canh_bao():

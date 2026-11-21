@@ -1,9 +1,11 @@
 import sqlite3
+from .tim_kiem import chuan_hoa
 
 
 def ket_noi(duong_dan: str) -> sqlite3.Connection:
     conn = sqlite3.connect(duong_dan, timeout=5, isolation_level=None)
     conn.row_factory = sqlite3.Row
+    conn.create_function("chuan_hoa", 1, chuan_hoa, deterministic=True)
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 

@@ -9,13 +9,16 @@ Api.khoiTao({batBuoc:"NV_BAN_HANG"}).then(()=>{
   }
   const pages={
     "don-hang": () => {
-  let locTrangThaiDon = "";
+  const initial=new URLSearchParams(location.search);
+  let locTrangThaiDon=initial.get("trang_thai")||"";
   const bangDonHang = document.getElementById("bang-don-hang"),
         formTimDon = document.getElementById("form-tim-don"),
         tuKhoaDonInput = document.getElementById("tu-khoa-don"),
         filterDonPills = document.querySelectorAll("#panel-don-hang .filter-pill");
 
+  tuKhoaDonInput.value=initial.get("tu_khoa")||"";
   filterDonPills.forEach((pill) => {
+    pill.classList.toggle("active",(pill.dataset.tt||"")===locTrangThaiDon);
     pill.onclick = () => {
       filterDonPills.forEach((p) => p.classList.remove("active"));
       pill.classList.add("active");
@@ -29,7 +32,8 @@ Api.khoiTao({batBuoc:"NV_BAN_HANG"}).then(()=>{
     taiDanhSachDon();
   };
 
-  async function taiDanhSachDon() {
+  const pagerDon=Api.taoPhanTrang(bangDonHang,p=>taiDanhSachDon(p));
+  async function taiDanhSachDon(page=1) {
     const request=batDauTai("don");
     bangDonHang.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--muted); padding: 1.5rem;">Đang tải danh sách đơn hàng...</td></tr>`;
     try {
@@ -38,8 +42,10 @@ Api.khoiTao({batBuoc:"NV_BAN_HANG"}).then(()=>{
       if (locTrangThaiDon) url += `trang_thai=${encodeURIComponent(locTrangThaiDon)}&`;
       if (tk) url += `tu_khoa=${encodeURIComponent(tk)}&`;
 
-      const ds = await Api.get(url,{signal:request.signal});
+      const result = await Api.get(pagerDon.url(url,page),{signal:request.signal});
+      const ds=Array.isArray(result)?result:result.items;
       if(request.signal.aborted)return;
+      pagerDon.render(result);
       bangDonHang.replaceChildren();
 
       if (!ds || ds.length === 0) {
@@ -116,10 +122,11 @@ Api.khoiTao({batBuoc:"NV_BAN_HANG"}).then(()=>{
       }
     } catch (err) {
       if(request.signal.aborted || err.name==="AbortError")return;
+      pagerDon.error();
       bangDonHang.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi tải đơn hàng: ${Api.html(err.thong_bao || err.message)}</td></tr>`;
     }
   }
-      taiDanhSachDon();
+      taiDanhSachDon(pagerDon.initialPage);
     },
     "khach-hang": () => {
   const bangKhachHang = document.getElementById("bang-khach-hang"),
@@ -139,6 +146,7 @@ Api.khoiTao({batBuoc:"NV_BAN_HANG"}).then(()=>{
         bangLichSuKh = document.getElementById("bang-lich-su-kh"),
         nutDongLichSu = document.getElementById("nut-dong-lich-su");
 
+  tuKhoaKhInput.value=new URLSearchParams(location.search).get("tu_khoa")||"";
   formTraCuuKh.onsubmit = (ev) => {
     ev.preventDefault();
     taiDanhSachKhach(tuKhoaKhInput.value.trim());
@@ -201,13 +209,16 @@ Api.khoiTao({batBuoc:"NV_BAN_HANG"}).then(()=>{
     } finally {save.disabled=false;save.textContent="Lưu khách hàng";}
   };
 
-  async function taiDanhSachKhach(tuKhoa = "") {
+  const pagerKhach=Api.taoPhanTrang(bangKhachHang,p=>taiDanhSachKhach(tuKhoaKhInput.value.trim(),p));
+  async function taiDanhSachKhach(tuKhoa = "",page=1) {
     const request=batDauTai("khach");
     bangKhachHang.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--muted); padding: 1.5rem;">Đang tải dữ liệu khách hàng...</td></tr>`;
     try {
       const url = tuKhoa ? `/api/ban-hang/khach-hang?tu_khoa=${encodeURIComponent(tuKhoa)}` : `/api/ban-hang/khach-hang`;
-      const ds = await Api.get(url,{signal:request.signal});
+      const result = await Api.get(pagerKhach.url(url,page),{signal:request.signal});
+      const ds=Array.isArray(result)?result:result.items;
       if(request.signal.aborted)return;
+      pagerKhach.render(result);
       bangKhachHang.replaceChildren();
 
       if (!ds || ds.length === 0) {
@@ -272,6 +283,7 @@ Api.khoiTao({batBuoc:"NV_BAN_HANG"}).then(()=>{
       }
     } catch (err) {
       if(request.signal.aborted || err.name==="AbortError")return;
+      pagerKhach.error();
       bangKhachHang.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--loi); padding: 1.5rem;">Lỗi tải khách hàng: ${Api.html(err.thong_bao || err.message)}</td></tr>`;
     }
   }
@@ -318,6 +330,7 @@ Api.khoiTao({batBuoc:"NV_BAN_HANG"}).then(()=>{
         const tdXem = document.createElement("td");
         tdXem.style.textAlign = "center";
         tdXem.innerHTML = `<a href="/ban-hang/don-hang/${encodeURIComponent(d.ma_don)}" class="button secondary" style="padding: .2rem .5rem; font-size: .8rem;">Chi tiết</a>`;
+        if(d.ma_nv && d.ma_nv!==Api.phien.nguoi_dung.ma_nv)tdXem.textContent="Do nhân viên lập đơn quản lý";
 
         tr.append(tdMa, tdNgay, tdNv, tdTien, tdTt, tdXem);
         bangLichSuKh.append(tr);
@@ -327,7 +340,7 @@ Api.khoiTao({batBuoc:"NV_BAN_HANG"}).then(()=>{
       bangLichSuKh.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--loi); padding: 1rem;">Lỗi: ${Api.html(err.thong_bao || err.message)}</td></tr>`;
     }
   }
-      taiDanhSachKhach();
+      taiDanhSachKhach(tuKhoaKhInput.value.trim(),pagerKhach.initialPage);
     },
     "thong-ke": () => {
   let kieuThongKeDoanhThu = "ngay";

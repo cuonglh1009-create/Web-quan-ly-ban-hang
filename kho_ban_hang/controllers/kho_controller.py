@@ -26,9 +26,23 @@ class KhoController:
             "so_ngay_canh_bao": self.kho.cau_hinh.so_ngay_canh_bao,
         }
 
-    def danh_sach_phieu(self, ma_phien_web, q="", trang_thai=""):
+    def danh_sach_phieu(self, ma_phien_web, q="", trang_thai="", page=None, page_size=20):
         self.yeu_cau_nhan_vien_kho(ma_phien_web)
-        return KhoTruyVanRepository(self.kho.ket_noi_db).phieu_nhap(q, trang_thai)
+        return KhoTruyVanRepository(self.kho.ket_noi_db).phieu_nhap(q, trang_thai, page, page_size)
+
+    def tong_quan(self, ma_phien_web):
+        self.yeu_cau_nhan_vien_kho(ma_phien_web)
+        return KhoTruyVanRepository(self.kho.ket_noi_db).tong_quan(
+            self.kho.cau_hinh.nguong_ton_kho, self.kho.cau_hinh.so_ngay_canh_bao)
+
+    def ton_san_pham(self, ma_phien_web):
+        self.yeu_cau_nhan_vien_kho(ma_phien_web)
+        return KhoTruyVanRepository(self.kho.ket_noi_db).ton_san_pham()
+
+    def trang_lo_hang(self, ma_phien_web, **bo_loc):
+        self.yeu_cau_nhan_vien_kho(ma_phien_web)
+        return KhoTruyVanRepository(self.kho.ket_noi_db).lo_hang(
+            **bo_loc, so_ngay_canh_bao=self.kho.cau_hinh.so_ngay_canh_bao)
 
     def lap_phieu_nhap(self, ma_phien_web: str | None, du_lieu: PhieuNhapDTO) -> PhieuNhapKetQuaDTO:
         nhan_vien = self.yeu_cau_nhan_vien_kho(ma_phien_web)

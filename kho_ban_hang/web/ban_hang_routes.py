@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request
+from kho_ban_hang.repositories.phan_trang import doc_phan_trang
 
 from kho_ban_hang.domain.enums_chung import VaiTro
 from kho_ban_hang.web.chung import bao_ve_trang, container, doc_cookie, doc_json, tra_phan_hoi
@@ -55,7 +56,7 @@ def lap_don():
 def lay_danh_sach_don():
     tt = request.args.get("trang_thai") or None
     tk = request.args.get("tu_khoa") or None
-    return tra_phan_hoi(container().ban_hang_controller.lay_danh_sach_don_hang(doc_cookie(), tt, tk))
+    return tra_phan_hoi(container().ban_hang_controller.lay_danh_sach_don_hang(doc_cookie(), tt, tk, *doc_phan_trang(request.args)))
 
 
 @bp.get(f"{API}/don-hang/<ma_don>")
@@ -106,8 +107,8 @@ def ma_khoi_tao():
 def lay_khach_hang():
     tk = request.args.get("tu_khoa")
     if tk is not None:
-        return tra_phan_hoi(container().ban_hang_controller.tra_cuu_khach_hang(doc_cookie(), tk))
-    return tra_phan_hoi(container().ban_hang_controller.lay_danh_sach_khach_hang(doc_cookie()))
+        return tra_phan_hoi(container().ban_hang_controller.tra_cuu_khach_hang(doc_cookie(), tk, *doc_phan_trang(request.args)))
+    return tra_phan_hoi(container().ban_hang_controller.lay_danh_sach_khach_hang(doc_cookie(), *doc_phan_trang(request.args)))
 
 
 @bp.post(f"{API}/khach-hang")

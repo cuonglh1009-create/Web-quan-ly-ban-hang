@@ -1,0 +1,65 @@
+{
+  "dataset": {
+    "products": 1000,
+    "lots": 10000,
+    "orders": 1000,
+    "customers": 1003,
+    "receipts": 1000
+  },
+  "paged": true,
+  "measurements": {
+    "selected_stock": {
+      "median_ms": 0.27,
+      "selects": 3,
+      "json_bytes": 12,
+      "rows": null
+    },
+    "order_1000_lines": {
+      "median_ms": 21.456,
+      "selects": 6,
+      "json_bytes": 39020,
+      "rows": null
+    },
+    "orders": {
+      "median_ms": 1.708,
+      "selects": 2,
+      "json_bytes": 6267,
+      "rows": 20
+    },
+    "customers": {
+      "median_ms": 2.6,
+      "selects": 2,
+      "json_bytes": 4537,
+      "rows": 20
+    },
+    "receipts": {
+      "median_ms": 4.471,
+      "selects": 2,
+      "json_bytes": 3467,
+      "rows": 20
+    },
+    "lots": {
+      "median_ms": 2.399,
+      "selects": 2,
+      "json_bytes": 4809,
+      "rows": 20
+    }
+  },
+  "query_plans": [
+    {
+      "id": 3,
+      "parent": 0,
+      "notused": 62,
+      "detail": "SEARCH lo_hang USING INDEX idx_lo_hang_ma_sp (ma_sp=?)"
+    }
+  ],
+  "query_plans_owner_orders": [
+    {
+      "id": 4,
+      "parent": 0,
+      "notused": 55,
+      "detail": "SEARCH don_hang USING COVERING INDEX idx_don_nhan_vien_ngay (ma_nv=?)"
+    }
+  ],
+  "python": "3.13.9 | packaged by Anaconda, Inc. | (main, Oct 21 2025, 19:09:58) [MSC v.1929 64 bit (AMD64)]"
+}

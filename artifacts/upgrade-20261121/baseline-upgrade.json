@@ -1,0 +1,42 @@
+{
+  "dataset": {
+    "products": 1000,
+    "lots": 10000,
+    "orders": 1000,
+    "customers": 1003,
+    "receipts": 1000
+  },
+  "paged": false,
+  "measurements": {
+    "selected_stock": {
+      "median_ms": 77.067,
+      "selects": 5,
+      "json_bytes": 12,
+      "rows": null
+    },
+    "order_1000_lines": {
+      "median_ms": 24.015,
+      "selects": 1003,
+      "json_bytes": 39020,
+      "rows": null
+    },
+    "orders": {
+      "median_ms": 7.06,
+      "selects": 1,
+      "json_bytes": 310010,
+      "rows": 1000
+    },
+    "customers": {
+      "median_ms": 5.512,
+      "selects": 1,
+      "json_bytes": 225520,
+      "rows": 1003
+    },
+    "receipts": {
+      "median_ms": 11.388,
+      "selects": 1,
+      "json_bytes": 170000,
+      "rows": 1000
+    }
+  }
+}

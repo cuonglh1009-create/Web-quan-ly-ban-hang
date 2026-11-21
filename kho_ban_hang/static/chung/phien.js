@@ -93,6 +93,42 @@ const Api = {
     notice.append(text,retry);
   },
 
+  taoPhanTrang(tbody, onPage) {
+    const footer=document.createElement("div");footer.className="table-footer";
+    const status=document.createElement("span");status.setAttribute("role","status");
+    const controls=document.createElement("div");controls.className="pagination";
+    const prev=document.createElement("button"),next=document.createElement("button");
+    prev.type=next.type="button";prev.className=next.className="secondary";
+    prev.textContent="Trang trước";next.textContent="Trang sau";
+    const label=document.createElement("label");label.className="page-size-label";label.textContent="Số dòng/trang";
+    const size=document.createElement("select");
+    for(const value of [10,20,50,100]){const option=document.createElement("option");option.value=value;option.textContent=value;size.append(option);}
+    const query=new URLSearchParams(location.search);
+    size.value=["10","20","50","100"].includes(query.get("page_size"))?query.get("page_size"):"20";
+    label.append(size);controls.append(label,prev,next);footer.append(status,controls);
+    tbody.closest(".table-wrap").after(footer);
+    let page=1,pages=1;
+    function load(target){prev.disabled=next.disabled=true;status.textContent="Đang tải…";onPage(target);}
+    prev.onclick=()=>load(page-1);next.onclick=()=>load(page+1);size.onchange=()=>load(1);
+    prev.disabled=next.disabled=true;
+    return {
+      initialPage:Math.max(1,Number(query.get("page"))||1),
+      url(url, target=1){
+        const parsed=new URL(url,location.origin);parsed.searchParams.set("page",target);parsed.searchParams.set("page_size",size.value);
+        history.replaceState(null,"",location.pathname+"?"+parsed.searchParams);
+        return parsed.pathname+parsed.search;
+      },
+      render(result){
+        if(Array.isArray(result))result={items:result,total:result.length,page:1,pages:1,page_size:Number(size.value)};
+        page=result.page;pages=result.pages;
+        const actual=new URL(location.href);actual.searchParams.set("page",page);actual.searchParams.set("page_size",result.page_size);history.replaceState(null,"",actual.pathname+actual.search);
+        prev.disabled=page<=1;next.disabled=page>=pages;
+        status.textContent=result.total ? ((page-1)*result.page_size+1)+"–"+Math.min(page*result.page_size,result.total)+" / "+result.total+" · Trang "+page+"/"+pages : "Không có kết quả";
+      },
+      error(){prev.disabled=next.disabled=true;status.textContent="Không tải được trang. Hãy thử tìm lại.";}
+    };
+  },
+
   docTien(value) {
     const raw=String(value ?? "").trim().replace(/[\u00a0\u202f]/g," ");
     if(!raw)return null;

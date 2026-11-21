@@ -1,4 +1,5 @@
 from datetime import date
+from dataclasses import dataclass, replace
 from decimal import Decimal, ROUND_FLOOR
 
 from kho_ban_hang.domain.enums_chung import TrangThaiDonHang as TT
@@ -9,9 +10,17 @@ from kho_ban_hang.domain.nhan_vien import NhanVien
 from kho_ban_hang.domain.san_pham import SanPham
 
 
+@dataclass(frozen=True)
 class ChiTietDonHang:
-    def __init__(self, san_pham: SanPham, so_luong: int, don_gia: int):
-        self.san_pham, self.so_luong, self.don_gia = san_pham, so_luong, don_gia
+    san_pham: SanPham
+    so_luong: int
+    don_gia: int
+
+    def __post_init__(self):
+        if type(self.so_luong) is not int or self.so_luong <= 0:
+            raise LoiDuLieu("SO_LUONG_KHONG_HOP_LE", "Số lượng phải là số nguyên dương", "so_luong")
+        if type(self.don_gia) is not int or self.don_gia <= 0:
+            raise LoiDuLieu("GIA_KHONG_HOP_LE", "Đơn giá phải là số nguyên dương", "don_gia")
 
     def thanh_tien(self) -> int:
         return self.so_luong * self.don_gia
@@ -23,11 +32,22 @@ class DonHang:
                  chi_tiet: list[ChiTietDonHang] | None = None,
                  khuyen_mai: KhuyenMai | None = None,
                  giam_hang_khach: int = 0, giam_khuyen_mai: int = 0):
-        self.ma_don, self.ngay_lap, self.trang_thai = ma_don, ngay_lap, trang_thai
+        self.ma_don, self.ngay_lap, self._trang_thai = ma_don, ngay_lap, TT(trang_thai)
         self.nhan_vien, self.khach_hang = nhan_vien, khach_hang
-        self.chi_tiet = chi_tiet if chi_tiet is not None else []
+        self._chi_tiet = list(chi_tiet or ())
+        self._vi_tri = {ct.san_pham.ma_sp: i for i, ct in enumerate(self._chi_tiet)}
+        if len(self._vi_tri) != len(self._chi_tiet):
+            raise LoiDuLieu("TRUNG_SAN_PHAM", "Chi tiết đơn chứa mã sản phẩm trùng", "dong")
         self.khuyen_mai = khuyen_mai
         self.giam_hang_khach, self.giam_khuyen_mai = giam_hang_khach, giam_khuyen_mai
+
+    @property
+    def trang_thai(self):
+        return self._trang_thai
+
+    @property
+    def chi_tiet(self):
+        return tuple(self._chi_tiet)
 
     #  lập đơn (trạng thái NHAP)
     def them_chi_tiet(self, san_pham: SanPham, so_luong: int) -> None:  # QT06
@@ -38,11 +58,13 @@ class DonHang:
         if not san_pham.co_the_ban():
             raise LoiDuLieu("SAN_PHAM_KHONG_BAN_DUOC",
                             f"Sản phẩm {san_pham.ma_sp} hiện không thể bán", "ma_sp")
-        for ct in self.chi_tiet:                      # gộp dòng trùng mã, giữ giá đã chốt
-            if ct.san_pham.ma_sp == san_pham.ma_sp:
-                ct.so_luong += so_luong
-                return
-        self.chi_tiet.append(ChiTietDonHang(san_pham, so_luong, san_pham.gia_niem_yet))
+        index = self._vi_tri.get(san_pham.ma_sp)
+        if index is not None:
+            ct = self._chi_tiet[index]
+            self._chi_tiet[index] = replace(ct, so_luong=ct.so_luong+so_luong)
+            return
+        self._vi_tri[san_pham.ma_sp] = len(self._chi_tiet)
+        self._chi_tiet.append(ChiTietDonHang(san_pham, so_luong, san_pham.gia_niem_yet))
 
     def tinh_tam_tinh(self) -> int:
         return sum(ct.thanh_tien() for ct in self.chi_tiet)
@@ -62,7 +84,7 @@ class DonHang:
             raise XungDot("SAI_TRANG_THAI", "Đơn không ở trạng thái nháp")
         if not self.chi_tiet:
             raise LoiDuLieu("DONG_RONG", "Đơn phải có ít nhất một dòng", "dong")
-        self.trang_thai = TT.CHO_THANH_TOAN
+        self._trang_thai = TT.CHO_THANH_TOAN
 
     #  khuyến mại
     def ap_dung_khuyen_mai(self, km: KhuyenMai, ngay: date) -> None:  # QT07
@@ -83,11 +105,11 @@ class DonHang:
     def danh_dau_da_thanh_toan(self) -> None:
         if self.trang_thai != TT.CHO_THANH_TOAN:
             raise XungDot("SAI_TRANG_THAI", "Đơn không ở trạng thái chờ thanh toán")
-        self.trang_thai = TT.DA_THANH_TOAN
+        self._trang_thai = TT.DA_THANH_TOAN
 
     def huy(self) -> None:
         if self.trang_thai == TT.DA_THANH_TOAN:
             raise XungDot("DON_DA_THANH_TOAN", "Đơn đã thanh toán, không thể hủy")
         if self.trang_thai != TT.CHO_THANH_TOAN:
             raise XungDot("SAI_TRANG_THAI", "Chỉ hủy được đơn đang chờ thanh toán")
-        self.trang_thai = TT.DA_HUY
+        self._trang_thai = TT.DA_HUY

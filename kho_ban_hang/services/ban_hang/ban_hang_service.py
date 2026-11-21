@@ -156,11 +156,11 @@ class BanHangService:
             })
         return danh_sach
 
-    def lay_danh_sach_khach_hang(self) -> list[dict]:
-        return self.khach_repo.tim_tat_ca()
+    def lay_danh_sach_khach_hang(self, page=None, page_size=20) -> list[dict]:
+        return self.khach_repo.tim_tat_ca(page, page_size)
 
-    def tra_cuu_khach_hang(self, tu_khoa: str) -> list[dict]:
-        return self.khach_repo.tra_cuu(tu_khoa)
+    def tra_cuu_khach_hang(self, tu_khoa: str, page=None, page_size=20) -> list[dict]:
+        return self.khach_repo.tra_cuu(tu_khoa, page, page_size)
 
     def them_khach_hang(self, du_lieu: dict) -> dict:
         ho_ten = chuoi_bat_buoc(du_lieu.get("ho_ten"), "ho_ten", 160)
@@ -198,8 +198,8 @@ class BanHangService:
             "ma_kh_du_kien": self.khach_repo.cap_ma_moi()
         }
 
-    def lay_danh_sach_don_hang(self, trang_thai: str | None = None, tu_khoa: str | None = None) -> list[dict]:
-        return self.don_repo.lay_danh_sach(trang_thai, tu_khoa)
+    def lay_danh_sach_don_hang(self, trang_thai: str | None = None, tu_khoa: str | None = None, page=None, page_size=20, ma_nv=None) -> list[dict]:
+        return self.don_repo.lay_danh_sach(trang_thai, tu_khoa, page, page_size, ma_nv)
 
     def thong_ke_doanh_thu(self, kieu: str = "ngay") -> list[dict]:
         return self.don_repo.thong_ke_doanh_thu(kieu)
