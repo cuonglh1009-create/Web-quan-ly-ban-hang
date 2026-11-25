@@ -13,7 +13,7 @@
     {% for sp in san_pham %}{% set group = {'THUC_PHAM':'Thực phẩm','DIEN_TU':'Điện tử','THOI_TRANG':'Thời trang'}.get(sp.loai,sp.loai) %}
     {% set illustration = {'THUC_PHAM':'food','DIEN_TU':'electronics','THOI_TRANG':'fashion'}.get(sp.loai,'other') %}
     <tr data-product-row data-search="{{ sp.ma_sp }} {{ sp.ten_sp }} {{ group }}" data-status="{{ sp.trang_thai }}" data-category="{{ sp.loai }}" data-code="{{ sp.ma_sp }}">
-      <td><div class="product-identity"><img src="{{ url_for('static',filename='kho/images/'+illustration+'.svg') }}" alt="" width="56" height="56"><div><strong>{{ sp.ten_sp }}</strong><small class="subline">{{ sp.ma_sp }} · {{ sp.don_vi_tinh }}</small></div></div></td>
+      <td><div class="product-identity"><img src="{{ url_for('static',filename='kho/images/'+illustration+'.jpg') }}" alt="" width="56" height="56"><div><strong>{{ sp.ten_sp }}</strong><small class="subline">{{ sp.ma_sp }} · {{ sp.don_vi_tinh }}</small></div></div></td>
       <td>{{ group }}</td><td class="numeric nowrap">{{ "{:,}".format(sp.gia_niem_yet).replace(',','.') }} ₫</td>
       <td class="numeric"><strong data-product-available>Đang tải…</strong><small class="subline">{{ sp.don_vi_tinh }}</small></td>
       <td><span class="badge {{ 'success' if sp.trang_thai=='KINH_DOANH' else 'neutral' }}">{{ 'Đang kinh doanh' if sp.trang_thai=='KINH_DOANH' else 'Ngừng kinh doanh' }}</span></td>
