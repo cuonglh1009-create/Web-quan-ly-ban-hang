@@ -188,6 +188,33 @@ class KiemThuNangCapOOP(unittest.TestCase):
         self.assertTrue(sp02_moi["so_kha_dung"] >= 10)
         self.assertEqual(sp02_moi["nha_cung_cap"], "Nhà cung cấp An Phú")
 
+    def test_dang_nhap_chi_can_ten_va_lap_phieu_tu_dong_gan(self):
+        # 1. Đăng nhập chỉ cần tên đăng nhập
+        csrf = self.client.get("/api/xac-thuc/phien").json["du_lieu"]["csrf_token"]
+        login_res = self.client.post("/api/xac-thuc/dang-nhap", json={
+            "ten_dang_nhap": "nv_kho",
+        }, headers={"X-CSRF-Token": csrf})
+        self.assertEqual(login_res.status_code, 200)
+        self.assertEqual(login_res.json["du_lieu"]["nguoi_dung"]["vai_tro"], "NV_KHO")
+
+        # 2. Lập phiếu nhập: gõ tên NCC mới, gõ tên SP mới, mã SP và mã lô được máy tự động gán
+        csrf = login_res.json["du_lieu"]["csrf_token"]
+        from datetime import date
+        res_phieu = self.client.post("/api/kho/phieu-nhap", json={
+            "ten_ncc": "Nhà cung cấp Việt Nhật",
+            "ngay_nhap": date.today().isoformat(),
+            "dong": [{
+                "ten_sp": "Quạt thông gió mini",
+                "so_luong_nhap": 5,
+                "gia_nhap": 120_000,
+            }]
+        }, headers={"X-CSRF-Token": csrf})
+        self.assertEqual(res_phieu.status_code, 201)
+        data = res_phieu.json["du_lieu"]
+        self.assertTrue(data["ma_ncc"].startswith("NCC"))
+        self.assertTrue(data["dong"][0]["ma_sp"].startswith("SP"))
+        self.assertTrue(data["dong"][0]["ma_lo"].startswith("LO-"))
+
 
 if __name__ == "__main__":
     unittest.main()

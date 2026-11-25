@@ -20,24 +20,111 @@ class NhapKhoService:
 
     def lap_phieu(self, du_lieu: PhieuNhapDTO, nguoi_lap: NhanVien) -> PhieuNhapKho:
         with GiaoDich(self.ket_noi_db):
+            # 1. Tìm hoặc tự động tạo nhà cung cấp khi người dùng gõ vào
+            ncc = None
+            try:
+                ncc = self.nha_cung_cap_repo.tim_theo_ma(du_lieu.ma_ncc)
+            except KhongTimThayError:
+                pass
+            if ncc is None:
+                all_ncc = self.nha_cung_cap_repo.tim_tat_ca()
+                ten_tim = (du_lieu.ten_ncc or du_lieu.ma_ncc).strip().lower()
+                for item in all_ncc:
+                    if item.ten_ncc.strip().lower() == ten_tim or item.ma_ncc.strip().lower() == ten_tim:
+                        ncc = item
+                        break
+            if ncc is None:
+                ten_ncc_moi = (du_lieu.ten_ncc or du_lieu.ma_ncc).strip()
+                all_ncc = self.nha_cung_cap_repo.tim_tat_ca()
+                max_ncc_num = 0
+                for item in all_ncc:
+                    if item.ma_ncc.startswith("NCC") and item.ma_ncc[3:].isdigit():
+                        max_ncc_num = max(max_ncc_num, int(item.ma_ncc[3:]))
+                from ...domain.nha_cung_cap import NhaCungCap
+                from ...domain.enums_kho import TrangThaiNhaCungCap
+                ncc = NhaCungCap(f"NCC{max_ncc_num + 1:02d}", ten_ncc_moi, "", "", TrangThaiNhaCungCap.HOAT_DONG)
+                self.nha_cung_cap_repo.luu(ncc)
+
             phieu = PhieuNhapKho(
-                self.phieu_nhap_repo.cap_ma_moi(), du_lieu.ngay_nhap, nguoi_lap,
-                self.nha_cung_cap_repo.tim_theo_ma(du_lieu.ma_ncc),
+                self.phieu_nhap_repo.cap_ma_moi(), du_lieu.ngay_nhap, nguoi_lap, ncc,
             )
-            san_pham = self.san_pham_repo.tim_nhieu(dong.ma_sp for dong in du_lieu.dong)
+
+            # 2. Xử lý sản phẩm & mã lô tự động gán
             ma_lo_da_doc = set()
             for i, dong in enumerate(du_lieu.dong):
-                if dong.ma_lo in ma_lo_da_doc:
-                    raise TrungMaLoError("Mã lô bị lặp trong phiếu.", f"dong[{i}].ma_lo")
-                ma_lo_da_doc.add(dong.ma_lo)
-                sp = san_pham.get(dong.ma_sp)
+                ma_lo = dong.ma_lo
+                if not ma_lo:
+                    from uuid import uuid4
+                    ma_lo = f"LO-{du_lieu.ngay_nhap.strftime('%Y%m%d')}-{uuid4().hex[:6].upper()}"
+                if ma_lo in ma_lo_da_doc:
+                    from uuid import uuid4
+                    ma_lo = f"LO-{du_lieu.ngay_nhap.strftime('%Y%m%d')}-{uuid4().hex[:6].upper()}"
+                ma_lo_da_doc.add(ma_lo)
+
+                sp = None
+                try:
+                    sp = self.san_pham_repo.tim_theo_ma(dong.ma_sp)
+                except KhongTimThayError:
+                    pass
                 if sp is None:
-                    raise KhongTimThayError(f"Không tìm thấy sản phẩm {dong.ma_sp}.", f"dong[{i}].ma_sp")
+                    all_sp = self.san_pham_repo.tim_tat_ca()
+                    ten_sp_tim = (dong.ten_sp or dong.ma_sp).strip().lower()
+                    for item in all_sp:
+                        if item.ten_sp.strip().lower() == ten_sp_tim or item.ma_sp.strip().lower() == ten_sp_tim:
+                            sp = item
+                            break
+                if sp is None:
+                    ten_sp_moi = (dong.ten_sp or dong.ma_sp).strip()
+                    all_sp = self.san_pham_repo.tim_tat_ca()
+                    max_sp_num = 0
+                    for item in all_sp:
+                        if item.ma_sp.startswith("SP") and item.ma_sp[2:].isdigit():
+                            max_sp_num = max(max_sp_num, int(item.ma_sp[2:]))
+                    ma_sp_moi = f"SP{max_sp_num + 1:02d}"
+
+                    la_thuc_pham = dong.han_su_dung is not None or dong.ngay_san_xuat is not None
+                    from ...domain.danh_muc import DanhMuc
+                    from ...domain.enums_kho import LoaiSanPham, TrangThaiSanPham, TrangThaiDanhMuc
+                    danh_muc_all = self.san_pham_repo.danh_muc_repo.tim_tat_ca() if hasattr(self.san_pham_repo, 'danh_muc_repo') else []
+                    dm = None
+                    if danh_muc_all:
+                        for d in danh_muc_all:
+                            if la_thuc_pham and "thực phẩm" in d.ten_dm.lower():
+                                dm = d
+                                break
+                            elif not la_thuc_pham and "điện tử" in d.ten_dm.lower():
+                                dm = d
+                                break
+                        if not dm:
+                            dm = danh_muc_all[0]
+                    else:
+                        dm = DanhMuc("DM01", "Thực phẩm" if la_thuc_pham else "Điện tử", "", TrangThaiDanhMuc.HOAT_DONG)
+
+                    loai_sp = LoaiSanPham.THUC_PHAM if la_thuc_pham else LoaiSanPham.DIEN_TU
+                    from ...domain.san_pham_factory import SanPhamFactory
+                    sp_dict = {
+                        "ma_sp": ma_sp_moi,
+                        "ten_sp": ten_sp_moi,
+                        "gia_niem_yet": int(dong.gia_nhap * 1.25) if dong.gia_nhap > 0 else 100000,
+                        "don_vi_tinh": "gói" if la_thuc_pham else "chiếc",
+                        "trang_thai": TrangThaiSanPham.KINH_DOANH,
+                        "danh_muc": dm,
+                    }
+                    if la_thuc_pham:
+                        sp_dict["yeu_cau_bao_quan"] = "Nơi khô ráo"
+                    else:
+                        sp_dict["thoi_gian_bao_hanh"] = 12
+                        sp_dict["cong_suat"] = "10.0"
+
+                    sp = SanPhamFactory.tao_san_pham(loai_sp, sp_dict)
+                    self.san_pham_repo.luu(sp)
+
                 lo = LoHang(
-                    dong.ma_lo, sp, du_lieu.ngay_nhap, dong.ngay_san_xuat,
+                    ma_lo, sp, du_lieu.ngay_nhap, dong.ngay_san_xuat,
                     dong.han_su_dung, dong.so_luong_nhap, dong.gia_nhap,
                 )
                 phieu.them_chi_tiet(ChiTietPhieuNhap(sp, dong.so_luong_nhap, dong.gia_nhap, lo))
+
             phieu.kiem_tra_truoc_xac_nhan(date.today())
             self.phieu_nhap_repo.luu(phieu)
         return phieu

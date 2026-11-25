@@ -3,8 +3,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const error = document.getElementById("loi");
   const submit = form.querySelector(".submit");
   const retry = document.getElementById("thu-lai");
-  const password = form.elements.mat_khau;
-  const toggle = form.querySelector(".password-toggle");
   let ready = false;
   let busy = false;
 
@@ -12,14 +10,6 @@ document.addEventListener("DOMContentLoaded", () => {
     error.textContent = text;
     error.hidden = !text;
   }
-
-  toggle.addEventListener("click", () => {
-    const visible = password.type === "password";
-    password.type = visible ? "text" : "password";
-    toggle.textContent = visible ? "Ẩn" : "Hiện";
-    toggle.setAttribute("aria-label", visible ? "Ẩn mật khẩu" : "Hiện mật khẩu");
-    toggle.setAttribute("aria-pressed", String(visible));
-  });
 
   async function connect() {
     ready = false;
@@ -51,7 +41,6 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const result = await Api.post("/api/xac-thuc/dang-nhap", {
         ten_dang_nhap: form.elements.ten_dang_nhap.value.trim(),
-        mat_khau: password.value,
       });
       location.assign(result.trang_chu);
     } catch (e) {

@@ -13,6 +13,7 @@ class DongNhapDTO:
     gia_nhap: int
     ngay_san_xuat: date | None = None
     han_su_dung: date | None = None
+    ten_sp: str | None = None
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,7 @@ class PhieuNhapDTO:
     ma_ncc: str
     ngay_nhap: date
     dong: list[DongNhapDTO]
+    ten_ncc: str | None = None
 
 
 @dataclass(frozen=True)

@@ -124,11 +124,47 @@ function formPhieu(form) {
   const row = form.querySelector("[data-row-template]").content.firstElementChild.cloneNode(true);
   holder.append(row);
   const save = form.querySelector('button[type="submit"]');
-  row.elements.ma_sp.addEventListener("change", () => {
-    const food = row.elements.ma_sp.selectedOptions[0]?.dataset.food === "yes";
-    row.elements.ngay_san_xuat.required = food;
-    row.elements.han_su_dung.required = food;
+
+  function sinhMaLo() {
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `LO-${today}-${rand}`;
+  }
+
+  if (row.elements.ma_lo) {
+    row.elements.ma_lo.value = sinhMaLo();
+  }
+
+  const spOptions = Array.from(row.querySelectorAll("#ds-san-pham option") || []);
+  const nccOptions = Array.from(form.querySelectorAll("#ds-nha-cung-cap option") || []);
+
+  row.elements.ten_sp?.addEventListener("input", () => {
+    const val = row.elements.ten_sp.value.trim().toLowerCase();
+    const found = spOptions.find(opt => opt.value.trim().toLowerCase() === val || opt.dataset.ma?.toLowerCase() === val);
+    if (found) {
+      row.elements.ma_sp.value = found.dataset.ma;
+      const food = found.dataset.food === "yes";
+      row.elements.ngay_san_xuat.required = food;
+      row.elements.han_su_dung.required = food;
+    } else if (val) {
+      row.elements.ma_sp.value = "Tự động gán";
+      row.elements.ngay_san_xuat.required = false;
+      row.elements.han_su_dung.required = false;
+    } else {
+      row.elements.ma_sp.value = "";
+    }
   });
+
+  form.elements.ten_ncc?.addEventListener("input", () => {
+    const val = form.elements.ten_ncc.value.trim().toLowerCase();
+    const found = nccOptions.find(opt => opt.value.trim().toLowerCase() === val || opt.dataset.ma?.toLowerCase() === val);
+    if (found && form.elements.ma_ncc) {
+      form.elements.ma_ncc.value = found.dataset.ma;
+    } else if (form.elements.ma_ncc) {
+      form.elements.ma_ncc.value = "";
+    }
+  });
+
   form.addEventListener("input", ({ target }) => {
     target.removeAttribute("aria-invalid");
     const detail=target.parentElement.querySelector("[data-field-error]");
@@ -143,20 +179,35 @@ function formPhieu(form) {
     event.preventDefault();
     if (save.disabled) return;
     hienLoi(null);
-    const get = name => row.elements.namedItem(name).value;
+    const get = name => row.elements.namedItem(name)?.value;
     const price=Api.docTien(get("gia_nhap"));
     if(!Number.isSafeInteger(price)||price<=0){row.elements.gia_nhap.setCustomValidity("Nhập giá hợp lệ, ví dụ 135.000");row.elements.gia_nhap.reportValidity();return;}
+    const tenSp = (get("ten_sp") || "").trim();
+    let maSp = (get("ma_sp") || "").trim();
+    if (!maSp || maSp === "Tự động gán") {
+      maSp = tenSp;
+    }
+    let maLo = (get("ma_lo") || "").trim();
+    if (!maLo || maLo === "Tự động gán") {
+      maLo = sinhMaLo();
+    }
     const dong = [{
-      ma_sp: get("ma_sp"), ma_lo: get("ma_lo").trim(),
-      so_luong_nhap: Number(get("so_luong_nhap")), gia_nhap: price,
-      ngay_san_xuat: get("ngay_san_xuat") || null, han_su_dung: get("han_su_dung") || null,
+      ma_sp: maSp,
+      ten_sp: tenSp,
+      ma_lo: maLo,
+      so_luong_nhap: Number(get("so_luong_nhap")),
+      gia_nhap: price,
+      ngay_san_xuat: get("ngay_san_xuat") || null,
+      han_su_dung: get("han_su_dung") || null,
     }];
     save.disabled = true;
     save.textContent = "Đang lưu…";
     try {
+      const tenNcc = (form.elements.ten_ncc?.value || "").trim();
+      const maNcc = (form.elements.ma_ncc?.value || "").trim() || tenNcc;
       const result = await goiApi(api + "/phieu-nhap", {
         method: "POST",
-        body: {ma_ncc: form.elements.ma_ncc.value, ngay_nhap: form.elements.ngay_nhap.value, dong},
+        body: {ma_ncc: maNcc, ten_ncc: tenNcc, ngay_nhap: form.elements.ngay_nhap.value, dong},
       });
       submitted = true;
       location.assign(phieuPath + encodeURIComponent(result.ma_phieu));

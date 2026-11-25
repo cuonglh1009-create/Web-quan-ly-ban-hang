@@ -36,25 +36,39 @@ def _ngay(gia_tri, truong, tuy_chon=False):
 def _doc_phieu(du_lieu) -> PhieuNhapDTO:
     if not isinstance(du_lieu, dict):
         raise DuLieuKhongHopLeError("Gửi nội dung JSON của phiếu nhập.")
-    ma_ncc = _chuoi(du_lieu.get("ma_ncc"), "ma_ncc")
+    ten_ncc = (du_lieu.get("ten_ncc") or "").strip() or None
+    ma_ncc = (du_lieu.get("ma_ncc") or "").strip() or None
+    if not ma_ncc and not ten_ncc:
+        raise DuLieuKhongHopLeError("Vui lòng nhập nhà cung cấp.", "ma_ncc")
+    ma_ncc_val = ma_ncc or ten_ncc
     ngay_nhap = _ngay(du_lieu.get("ngay_nhap"), "ngay_nhap")
     cac_dong = du_lieu.get("dong")
     if not isinstance(cac_dong, list) or not cac_dong:
         raise DuLieuKhongHopLeError("Phiếu cần ít nhất một dòng hàng.", "dong")
     ket_qua = []
+    from uuid import uuid4
     for i, dong in enumerate(cac_dong):
         tien_to = f"dong[{i}]."
         if not isinstance(dong, dict):
             raise DuLieuKhongHopLeError("Dòng hàng phải là một đối tượng JSON.", f"dong[{i}]")
+        ten_sp = (dong.get("ten_sp") or "").strip() or None
+        ma_sp = (dong.get("ma_sp") or "").strip() or None
+        if not ma_sp and not ten_sp:
+            raise DuLieuKhongHopLeError("Vui lòng nhập tên sản phẩm.", tien_to + "ten_sp")
+        ma_sp_val = ma_sp or ten_sp
+        ma_lo = (dong.get("ma_lo") or "").strip()
+        if not ma_lo:
+            ma_lo = f"LO-{ngay_nhap.strftime('%Y%m%d')}-{uuid4().hex[:6].upper()}"
         ket_qua.append(DongNhapDTO(
-            _chuoi(dong.get("ma_sp"), tien_to + "ma_sp"),
-            _chuoi(dong.get("ma_lo"), tien_to + "ma_lo"),
+            ma_sp_val,
+            ma_lo,
             _so_nguyen(dong.get("so_luong_nhap"), tien_to + "so_luong_nhap"),
             _so_nguyen(dong.get("gia_nhap"), tien_to + "gia_nhap"),
             _ngay(dong.get("ngay_san_xuat"), tien_to + "ngay_san_xuat", tuy_chon=True),
             _ngay(dong.get("han_su_dung"), tien_to + "han_su_dung", tuy_chon=True),
+            ten_sp=ten_sp,
         ))
-    return PhieuNhapDTO(ma_ncc, ngay_nhap, ket_qua)
+    return PhieuNhapDTO(ma_ncc_val, ngay_nhap, ket_qua, ten_ncc=ten_ncc)
 
 
 def _json_hoa(gia_tri):

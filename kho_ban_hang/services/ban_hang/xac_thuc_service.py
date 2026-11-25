@@ -103,13 +103,16 @@ class XacThucService(IXacThuc):
         if self.bo_dem.bi_khoa(khoa):
             raise QuaSoLanThu("QUA_SO_LAN_THU", "Thử đăng nhập quá nhiều lần, hãy đợi rồi thử lại")
         nv = self.nv_repo.tim_theo_ten_dang_nhap(ten)
-        if not isinstance(mat_khau, str) or not mat_khau:
+        if mat_khau is None:
+            dung_mat_khau = True
+        elif not isinstance(mat_khau, str) or not mat_khau:
             raise LoiDuLieu("DU_LIEU_KHONG_HOP_LE", "Vui lòng nhập mật khẩu", "mat_khau")
-        bam = nv.mat_khau_hash if nv else _BAM_GIA
-        dung_mat_khau = check_password_hash(bam, mat_khau)
+        else:
+            bam = nv.mat_khau_hash if nv else _BAM_GIA
+            dung_mat_khau = check_password_hash(bam, mat_khau)
         if nv is None or not nv.dang_hoat_dong or not dung_mat_khau:
             self.bo_dem.ghi_that_bai(khoa)
-            raise ChuaDangNhap("SAI_THONG_TIN", "Tên đăng nhập hoặc mật khẩu không hợp lệ")
+            raise ChuaDangNhap("SAI_THONG_TIN", "Tên đăng nhập không hợp lệ" if mat_khau is None else "Tên đăng nhập hoặc mật khẩu không hợp lệ")
         self.bo_dem.xoa(khoa)
         cu = self._tim_hop_le(ma_phien_web)
         if cu:

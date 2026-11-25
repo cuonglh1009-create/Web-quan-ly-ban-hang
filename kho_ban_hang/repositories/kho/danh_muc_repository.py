@@ -13,6 +13,10 @@ class DanhMucRepository:
             raise KhongTimThayError(f"Không tìm thấy danh mục {ma_dm}.")
         return DanhMuc(row["ma_dm"], row["ten_dm"], row["mo_ta"], TrangThaiDanhMuc(row["trang_thai"]))
 
+    def tim_tat_ca(self) -> list[DanhMuc]:
+        rows = self.ket_noi_db.execute("SELECT * FROM danh_muc ORDER BY ma_dm").fetchall()
+        return [DanhMuc(r["ma_dm"], r["ten_dm"], r["mo_ta"], TrangThaiDanhMuc(r["trang_thai"])) for r in rows]
+
     def luu(self, danh_muc: DanhMuc) -> None:
         self.ket_noi_db.execute(
             """INSERT INTO danh_muc VALUES (?, ?, ?, ?)
