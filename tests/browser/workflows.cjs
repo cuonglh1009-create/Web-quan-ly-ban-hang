@@ -125,7 +125,11 @@ async function run() {
     await page.getByRole("button",{name:"Đăng nhập",exact:true}).click();
     await page.waitForURL("**/ban-hang**");
     for(const [tab,title] of [["khach-hang","Khách hàng"],["thong-ke","Thống kê doanh thu"],["tra-cuu-kho","Tra cứu kho"],["don-hang","Đơn hàng"]]){
-      await page.locator('.nav-tabs [data-tab="'+tab+'"]').click();
+      if (await page.locator('.nav-tabs [data-tab="'+tab+'"]').count()) {
+        await page.locator('.nav-tabs [data-tab="'+tab+'"]').click();
+      } else {
+        await page.locator('#menu a[href*="'+tab+'"]').click();
+      }
       await page.locator("[data-sales-heading]").filter({hasText:title}).waitFor();
       await page.locator('#panel-'+tab).waitFor();
     }
